@@ -14,16 +14,294 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          related_report_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_report_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_report_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_related_report_id_fkey"
+            columns: ["related_report_id"]
+            isOneToOne: false
+            referencedRelation: "waste_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          badge_level: string
+          co2_saved_kg: number
+          contribution_score: number
+          created_at: string
+          credits_balance: number
+          display_name: string | null
+          email: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          badge_level?: string
+          co2_saved_kg?: number
+          contribution_score?: number
+          created_at?: string
+          credits_balance?: number
+          display_name?: string | null
+          email?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          badge_level?: string
+          co2_saved_kg?: number
+          contribution_score?: number
+          created_at?: string
+          credits_balance?: number
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          after_photo_url: string | null
+          assigned_by: string | null
+          before_photo_url: string | null
+          completion_notes: string | null
+          created_at: string
+          id: string
+          report_id: string
+          status: Database["public"]["Enums"]["task_status"]
+          updated_at: string
+          weight_kg: number | null
+          worker_id: string | null
+        }
+        Insert: {
+          after_photo_url?: string | null
+          assigned_by?: string | null
+          before_photo_url?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          id?: string
+          report_id: string
+          status?: Database["public"]["Enums"]["task_status"]
+          updated_at?: string
+          weight_kg?: number | null
+          worker_id?: string | null
+        }
+        Update: {
+          after_photo_url?: string | null
+          assigned_by?: string | null
+          before_photo_url?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          id?: string
+          report_id?: string
+          status?: Database["public"]["Enums"]["task_status"]
+          updated_at?: string
+          weight_kg?: number | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "waste_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      waste_categories: {
+        Row: {
+          credits_per_kg: number
+          handling_info: string | null
+          icon: string | null
+          id: string
+          name: string
+          recycling_method: string | null
+        }
+        Insert: {
+          credits_per_kg?: number
+          handling_info?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          recycling_method?: string | null
+        }
+        Update: {
+          credits_per_kg?: number
+          handling_info?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          recycling_method?: string | null
+        }
+        Relationships: []
+      }
+      waste_reports: {
+        Row: {
+          address: string | null
+          assigned_supervisor_id: string | null
+          assigned_worker_id: string | null
+          created_at: string
+          credits_awarded: number | null
+          description: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          photo_urls: string[] | null
+          quantity_kg: number | null
+          reporter_id: string
+          status: Database["public"]["Enums"]["report_status"]
+          updated_at: string
+          waste_type: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_supervisor_id?: string | null
+          assigned_worker_id?: string | null
+          created_at?: string
+          credits_awarded?: number | null
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          photo_urls?: string[] | null
+          quantity_kg?: number | null
+          reporter_id: string
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+          waste_type: string
+        }
+        Update: {
+          address?: string | null
+          assigned_supervisor_id?: string | null
+          assigned_worker_id?: string | null
+          created_at?: string
+          credits_awarded?: number | null
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          photo_urls?: string[] | null
+          quantity_kg?: number | null
+          reporter_id?: string
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+          waste_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "citizen" | "worker" | "supervisor" | "admin"
+      report_status:
+        | "pending"
+        | "assigned"
+        | "in_progress"
+        | "completed"
+        | "rejected"
+      task_status: "pending" | "assigned" | "in_progress" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +428,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["citizen", "worker", "supervisor", "admin"],
+      report_status: [
+        "pending",
+        "assigned",
+        "in_progress",
+        "completed",
+        "rejected",
+      ],
+      task_status: ["pending", "assigned", "in_progress", "completed"],
+    },
   },
 } as const

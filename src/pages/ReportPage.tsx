@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Camera,
   MapPin,
@@ -6,9 +6,14 @@ import {
   ChevronLeft,
   Upload,
   CheckCircle2,
+  Image,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const wasteCategories = [
   { id: "plastic", label: "Plastic", icon: "♻️" },
@@ -17,28 +22,82 @@ const wasteCategories = [
   { id: "metal", label: "Metal", icon: "🔩" },
   { id: "glass", label: "Glass", icon: "🫙" },
   { id: "paper", label: "Paper", icon: "📄" },
-  { id: "textile", label: "Textile", icon: "👕" },
+  { id: "hazardous", label: "Hazardous", icon: "☢️" },
   { id: "mixed", label: "Mixed", icon: "🗑️" },
 ];
 
-const quantityOptions = ["Small bag", "Large bag", "Pile", "Dumpster-sized"];
-
 const ReportPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedQuantity, setSelectedQuantity] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState("");
+  const [description, setDescription] = useState("");
+  const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [address, setAddress] = useState("Detecting location...");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handlePhotoAdd = () => {
-    // Simulated photo
-    setPhotos((p) => [...p, `/placeholder.svg`]);
+  // Auto-detect location
+  useState(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setAddress(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        },
+        () => setAddress("Location unavailable — enter manually")
+      );
+    }
+  });
+
+  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const preview = URL.createObjectURL(file);
+      setPhotos((p) => [...p, { file, preview }]);
+    });
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => navigate("/"), 2000);
+  const handleSubmit = async () => {
+    if (!user || !selectedCategory) return;
+    setSubmitting(true);
+    try {
+      // Upload photos to storage
+      const photoUrls: string[] = [];
+      for (const photo of photos) {
+        const fileName = `${user.id}/${Date.now()}-${photo.file.name}`;
+        const { data } = await supabase.storage.from("report-photos").upload(fileName, photo.file);
+        if (data) {
+          const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(data.path);
+          photoUrls.push(urlData.publicUrl);
+        }
+      }
+
+      // Create waste report
+      const { error } = await supabase.from("waste_reports").insert({
+        reporter_id: user.id,
+        waste_type: selectedCategory,
+        description,
+        quantity_kg: quantity ? parseFloat(quantity) : null,
+        latitude: location?.lat ?? null,
+        longitude: location?.lng ?? null,
+        address,
+        photo_urls: photoUrls,
+      } as any);
+
+      if (error) throw error;
+      setSubmitted(true);
+      setTimeout(() => navigate("/"), 2000);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -59,31 +118,44 @@ const ReportPage = () => {
     // Step 0: Photo
     <div key="photo" className="space-y-4 animate-fade-in">
       <h2 className="text-lg font-bold text-foreground">Take Photos</h2>
-      <p className="text-sm text-muted-foreground">
-        Upload clear photos of the waste for AI analysis
-      </p>
+      <p className="text-sm text-muted-foreground">Upload clear photos of the waste</p>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple
+        className="hidden"
+        onChange={handlePhotoCapture}
+      />
       <div className="grid grid-cols-3 gap-3">
         {photos.map((p, i) => (
           <div key={i} className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
-            <img src={p} alt="" className="h-full w-full object-cover" />
+            <img src={p.preview} alt="" className="h-full w-full object-cover" />
           </div>
         ))}
         <button
-          onClick={handlePhotoAdd}
+          onClick={() => fileInputRef.current?.click()}
           className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary/40"
         >
           <Camera className="h-6 w-6 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground">Add Photo</span>
+          <span className="text-[10px] text-muted-foreground">Camera</span>
+        </button>
+        <button
+          onClick={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.multiple = true;
+            input.onchange = (e) => handlePhotoCapture(e as any);
+            input.click();
+          }}
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary/40"
+        >
+          <Image className="h-6 w-6 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground">Gallery</span>
         </button>
       </div>
-      {photos.length > 0 && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <p className="text-xs font-semibold text-primary">🤖 AI Suggestion</p>
-          <p className="mt-1 text-sm text-foreground">
-            Detected: <strong>Plastic waste</strong> — Water bottles, packaging
-          </p>
-        </div>
-      )}
     </div>,
 
     // Step 1: Category
@@ -108,38 +180,36 @@ const ReportPage = () => {
       </div>
     </div>,
 
-    // Step 2: Quantity + Location
+    // Step 2: Details
     <div key="details" className="space-y-5 animate-fade-in">
       <div>
-        <h2 className="text-lg font-bold text-foreground">Quantity & Location</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Estimate size and confirm location</p>
+        <h2 className="text-lg font-bold text-foreground">Details</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Add quantity and description</p>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Estimated Quantity</p>
-        <div className="grid grid-cols-2 gap-3">
-          {quantityOptions.map((q) => (
-            <button
-              key={q}
-              onClick={() => setSelectedQuantity(q)}
-              className={`rounded-xl border p-3 text-sm font-medium transition-all ${
-                selectedQuantity === q
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "border-border bg-card text-foreground hover:border-primary/30"
-              }`}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
+        <label className="text-sm font-medium text-foreground">Estimated Weight (kg)</label>
+        <Input
+          type="number"
+          placeholder="e.g. 5"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          className="rounded-xl"
+        />
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Location</p>
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-3">
-          <MapPin className="h-5 w-5 text-primary" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Auto-detected</p>
-            <p className="text-xs text-muted-foreground">MG Road, Sector 14, Gurugram</p>
-          </div>
+        <label className="text-sm font-medium text-foreground">Description (optional)</label>
+        <Input
+          placeholder="Describe the waste..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="rounded-xl"
+        />
+      </div>
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-3">
+        <MapPin className="h-5 w-5 text-primary" />
+        <div>
+          <p className="text-sm font-medium text-foreground">Location</p>
+          <p className="text-xs text-muted-foreground">{address}</p>
         </div>
       </div>
     </div>,
@@ -150,13 +220,11 @@ const ReportPage = () => {
       <div className="space-y-3 rounded-xl border border-border bg-card p-4">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Category</span>
-          <span className="font-medium text-foreground capitalize">
-            {selectedCategory ?? "—"}
-          </span>
+          <span className="font-medium text-foreground capitalize">{selectedCategory ?? "—"}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Quantity</span>
-          <span className="font-medium text-foreground">{selectedQuantity ?? "—"}</span>
+          <span className="font-medium text-foreground">{quantity ? `${quantity} kg` : "—"}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Photos</span>
@@ -164,11 +232,11 @@ const ReportPage = () => {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Location</span>
-          <span className="font-medium text-foreground">MG Road, Sector 14</span>
+          <span className="font-medium text-foreground text-right max-w-[180px] truncate">{address}</span>
         </div>
       </div>
       <p className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
-        ℹ️ Credits will be released <strong>only after</strong> verified QR-based collection
+        ℹ️ Credits will be released <strong>only after</strong> verified collection
       </p>
     </div>,
   ];
@@ -184,15 +252,11 @@ const ReportPage = () => {
           {steps.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all ${
-                i <= step ? "eco-gradient" : "bg-muted"
-              }`}
+              className={`h-1.5 flex-1 rounded-full transition-all ${i <= step ? "eco-gradient" : "bg-muted"}`}
             />
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">
-          {step + 1}/{steps.length}
-        </span>
+        <span className="text-xs text-muted-foreground">{step + 1}/{steps.length}</span>
       </div>
 
       {steps[step]}
@@ -209,9 +273,10 @@ const ReportPage = () => {
         ) : (
           <Button
             onClick={handleSubmit}
+            disabled={submitting}
             className="w-full rounded-xl py-6 text-sm font-semibold"
           >
-            <Upload className="mr-2 h-4 w-4" /> Submit Report
+            <Upload className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Report"}
           </Button>
         )}
       </div>
