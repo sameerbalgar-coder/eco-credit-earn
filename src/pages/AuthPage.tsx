@@ -15,7 +15,7 @@ const roles: { id: AppRole; label: string; icon: typeof User; desc: string }[] =
 ];
 
 const AuthPage = () => {
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
@@ -24,6 +24,12 @@ const AuthPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [selectedRole, setSelectedRole] = useState<AppRole>("citizen");
   const [submitting, setSubmitting] = useState(false);
+
+  // Redirect if already logged in
+  if (!loading && user) {
+    navigate("/", { replace: true });
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +47,8 @@ const AuthPage = () => {
         if (error) {
           toast({ title: "Signup failed", description: error.message, variant: "destructive" });
         } else {
-          toast({ title: "Account created!", description: "Please check your email to verify your account." });
+          toast({ title: "Account created!", description: "Welcome to EcoCredit!" });
+          navigate("/");
         }
       }
     } finally {
