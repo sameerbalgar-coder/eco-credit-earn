@@ -15,6 +15,9 @@ import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import MaterialsPage from "./pages/MaterialsPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import SupervisorDashboard from "./pages/SupervisorDashboard";
+import SupervisorAssignPage from "./pages/SupervisorAssignPage";
+import SupervisorWorkersPage from "./pages/SupervisorWorkersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +38,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const RoleBasedHome = () => {
+  const { profile } = useAuth();
+  const role = profile?.role;
+  if (role === "supervisor") return <SupervisorDashboard />;
+  // admin will get its own dashboard later
+  return <Index />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -50,7 +61,7 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Routes>
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<RoleBasedHome />} />
                       <Route path="/report" element={<ReportPage />} />
                       <Route path="/hazard" element={<HazardPage />} />
                       <Route path="/map" element={<MapPage />} />
@@ -59,6 +70,8 @@ const App = () => (
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/materials" element={<MaterialsPage />} />
                       <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/supervisor/assign" element={<SupervisorAssignPage />} />
+                      <Route path="/supervisor/workers" element={<SupervisorWorkersPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
