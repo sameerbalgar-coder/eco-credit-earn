@@ -18,6 +18,16 @@ import NotificationsPage from "./pages/NotificationsPage";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
 import SupervisorAssignPage from "./pages/SupervisorAssignPage";
 import SupervisorWorkersPage from "./pages/SupervisorWorkersPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminVerifyPage from "./pages/AdminVerifyPage";
+import AdminZonesPage from "./pages/AdminZonesPage";
+import ZoneStaffPage from "./pages/ZoneStaffPage";
+import AdminCreditsPage from "./pages/AdminCreditsPage";
+import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
+import ReportHistoryPage from "./pages/ReportHistoryPage";
+import CommunityPage from "./pages/CommunityPage";
+import RecyclingPage from "./pages/RecyclingPage";
+import PublicFeedPage from "./pages/PublicFeedPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,7 +52,7 @@ const RoleBasedHome = () => {
   const { profile } = useAuth();
   const role = profile?.role;
   if (role === "supervisor") return <SupervisorDashboard />;
-  // admin will get its own dashboard later
+  if (role === "admin") return <AdminDashboard />;
   return <Index />;
 };
 
@@ -70,8 +80,17 @@ const App = () => (
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/materials" element={<MaterialsPage />} />
                       <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/reports" element={<ReportHistoryPage />} />
+                      <Route path="/feed" element={<PublicFeedPage />} />
+                      <Route path="/community" element={<CommunityPage />} />
+                      <Route path="/recycling" element={<RecyclingPage />} />
                       <Route path="/supervisor/assign" element={<SupervisorAssignPage />} />
                       <Route path="/supervisor/workers" element={<SupervisorWorkersPage />} />
+                      <Route path="/admin/verify" element={<AdminVerifyPage />} />
+                      <Route path="/admin/zones" element={<AdminZonesPage />} />
+                      <Route path="/admin/zones/:zoneId/staff" element={<ZoneStaffPage />} />
+                      <Route path="/admin/credits" element={<AdminCreditsPage />} />
+                      <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
