@@ -1,16 +1,48 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, MapPin, Camera, Wallet, User } from "lucide-react";
+import { Home, MapPin, Camera, Wallet, User, Shield, Users, BarChart3, Recycle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
-const navItems = [
+const citizenNav = [
+  { to: "/", icon: Home, label: "Home" },
+  { to: "/feed", icon: Users, label: "Feed" },
+  { to: "/report", icon: Camera, label: "Report" },
+  { to: "/wallet", icon: Wallet, label: "Wallet" },
+  { to: "/profile", icon: User, label: "Profile" },
+];
+
+const supervisorNav = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/map", icon: MapPin, label: "Map" },
-  { to: "/report", icon: Camera, label: "Report" },
+  { to: "/report", icon: Camera, label: "Camera" },
+  { to: "/supervisor/workers", icon: Users, label: "Workers" },
+  { to: "/profile", icon: User, label: "Profile" },
+];
+
+const adminNav = [
+  { to: "/", icon: Home, label: "Home" },
+  { to: "/admin/verify", icon: Shield, label: "Verify" },
+  { to: "/admin/zones", icon: MapPin, label: "Zones" },
+  { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
+  { to: "/profile", icon: User, label: "Profile" },
+];
+
+const workerNav = [
+  { to: "/", icon: Home, label: "Home" },
+  { to: "/map", icon: MapPin, label: "Map" },
+  { to: "/report", icon: Camera, label: "Camera" },
   { to: "/wallet", icon: Wallet, label: "Wallet" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
 
 const BottomNav = () => {
   const location = useLocation();
+  const { profile } = useAuth();
+  const role = profile?.role;
+
+  const navItems = role === "admin" ? adminNav
+    : role === "supervisor" ? supervisorNav
+    : role === "worker" ? workerNav
+    : citizenNav;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">

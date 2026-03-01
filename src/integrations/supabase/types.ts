@@ -52,6 +52,80 @@ export type Database = {
           },
         ]
       }
+      event_volunteers: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_volunteers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_date: string
+          id: string
+          image_url: string | null
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          max_volunteers: number | null
+          organizer_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_date: string
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          max_volunteers?: number | null
+          organizer_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          max_volunteers?: number | null
+          organizer_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -89,6 +163,7 @@ export type Database = {
           co2_saved_kg: number
           contribution_score: number
           created_at: string
+          credibility_score: number
           credits_balance: number
           display_name: string | null
           email: string | null
@@ -102,6 +177,7 @@ export type Database = {
           co2_saved_kg?: number
           contribution_score?: number
           created_at?: string
+          credibility_score?: number
           credits_balance?: number
           display_name?: string | null
           email?: string | null
@@ -115,6 +191,7 @@ export type Database = {
           co2_saved_kg?: number
           contribution_score?: number
           created_at?: string
+          credibility_score?: number
           credits_balance?: number
           display_name?: string | null
           email?: string | null
@@ -124,15 +201,86 @@ export type Database = {
         }
         Relationships: []
       }
+      recycling_contacts: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          phone: string | null
+          service_type: string
+          waste_types: string[] | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          phone?: string | null
+          service_type?: string
+          waste_types?: string[] | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          phone?: string | null
+          service_type?: string
+          waste_types?: string[] | null
+        }
+        Relationships: []
+      }
+      report_upvotes: {
+        Row: {
+          created_at: string
+          id: string
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_upvotes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "waste_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           after_photo_url: string | null
           assigned_by: string | null
           before_photo_url: string | null
+          completed_at: string | null
           completion_notes: string | null
           created_at: string
           id: string
+          materials_used: string | null
           report_id: string
+          started_at: string | null
           status: Database["public"]["Enums"]["task_status"]
           updated_at: string
           weight_kg: number | null
@@ -142,10 +290,13 @@ export type Database = {
           after_photo_url?: string | null
           assigned_by?: string | null
           before_photo_url?: string | null
+          completed_at?: string | null
           completion_notes?: string | null
           created_at?: string
           id?: string
+          materials_used?: string | null
           report_id: string
+          started_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           updated_at?: string
           weight_kg?: number | null
@@ -155,10 +306,13 @@ export type Database = {
           after_photo_url?: string | null
           assigned_by?: string | null
           before_photo_url?: string | null
+          completed_at?: string | null
           completion_notes?: string | null
           created_at?: string
           id?: string
+          materials_used?: string | null
           report_id?: string
+          started_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           updated_at?: string
           weight_kg?: number | null
@@ -238,6 +392,7 @@ export type Database = {
           reporter_id: string
           status: Database["public"]["Enums"]["report_status"]
           updated_at: string
+          upvote_count: number
           waste_type: string
         }
         Insert: {
@@ -255,6 +410,7 @@ export type Database = {
           reporter_id: string
           status?: Database["public"]["Enums"]["report_status"]
           updated_at?: string
+          upvote_count?: number
           waste_type: string
         }
         Update: {
@@ -272,7 +428,67 @@ export type Database = {
           reporter_id?: string
           status?: Database["public"]["Enums"]["report_status"]
           updated_at?: string
+          upvote_count?: number
           waste_type?: string
+        }
+        Relationships: []
+      }
+      zone_staff: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_staff_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zones: {
+        Row: {
+          boundary_coords: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          boundary_coords?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          boundary_coords?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -14,6 +14,8 @@ import {
   TrendingUp,
   Bell,
   BookOpen,
+  Users,
+  ClipboardList,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -116,15 +118,17 @@ const Index = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground">Quick Actions</h2>
-        <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3">
           <QuickAction icon={Camera} label="Report" to="/report" />
-          <QuickAction icon={Recycle} label="Pickup" to="/report" />
+          <QuickAction icon={Recycle} label="Recycling" to="/recycling" />
           <QuickAction icon={AlertTriangle} label="Hazard" to="/hazard" />
           <QuickAction icon={MapPin} label="Map" to="/map" />
         </div>
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          <QuickAction icon={BookOpen} label="Materials Guide" to="/materials" />
-          <QuickAction icon={Bell} label="Notifications" to="/notifications" />
+        <div className="grid grid-cols-4 gap-3 mt-3">
+          <QuickAction icon={BookOpen} label="Materials" to="/materials" />
+          <QuickAction icon={Bell} label="Alerts" to="/notifications" />
+          <QuickAction icon={Users} label="Events" to="/community" />
+          <QuickAction icon={ClipboardList} label="My Reports" to="/reports" />
         </div>
       </div>
 
