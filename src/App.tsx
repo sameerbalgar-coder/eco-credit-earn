@@ -28,6 +28,9 @@ import ReportHistoryPage from "./pages/ReportHistoryPage";
 import CommunityPage from "./pages/CommunityPage";
 import RecyclingPage from "./pages/RecyclingPage";
 import PublicFeedPage from "./pages/PublicFeedPage";
+import WorkerDashboard from "./pages/WorkerDashboard";
+import WorkerTaskDetail from "./pages/WorkerTaskDetail";
+import WorkerHistoryPage from "./pages/WorkerHistoryPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +54,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const RoleBasedHome = () => {
   const { profile } = useAuth();
   const role = profile?.role;
+  if (role === "worker") return <WorkerDashboard />;
   if (role === "supervisor") return <SupervisorDashboard />;
   if (role === "admin") return <AdminDashboard />;
   return <Index />;
@@ -84,6 +88,8 @@ const App = () => (
                       <Route path="/feed" element={<PublicFeedPage />} />
                       <Route path="/community" element={<CommunityPage />} />
                       <Route path="/recycling" element={<RecyclingPage />} />
+                      <Route path="/worker/task/:taskId" element={<WorkerTaskDetail />} />
+                      <Route path="/worker/history" element={<WorkerHistoryPage />} />
                       <Route path="/supervisor/assign" element={<SupervisorAssignPage />} />
                       <Route path="/supervisor/workers" element={<SupervisorWorkersPage />} />
                       <Route path="/admin/verify" element={<AdminVerifyPage />} />

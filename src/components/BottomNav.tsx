@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, MapPin, Camera, Wallet, User, Shield, Users, BarChart3, Recycle } from "lucide-react";
+import { Home, MapPin, Camera, Wallet, User, Shield, Users, BarChart3, Recycle, ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const citizenNav = [
@@ -28,9 +28,9 @@ const adminNav = [
 
 const workerNav = [
   { to: "/", icon: Home, label: "Home" },
+  { to: "/worker/history", icon: ClipboardList, label: "Tasks" },
   { to: "/map", icon: MapPin, label: "Map" },
   { to: "/report", icon: Camera, label: "Camera" },
-  { to: "/wallet", icon: Wallet, label: "Wallet" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
 
