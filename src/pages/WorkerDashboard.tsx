@@ -14,6 +14,10 @@ import {
   ChevronRight,
   AlertTriangle,
   Camera,
+  Locate,
+  Map,
+  Upload,
+  Headphones,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -212,6 +216,45 @@ const WorkerDashboard = () => {
             })}
           </div>
         )}
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Quick Actions</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: Locate, label: "Nearby Tasks", action: () => navigate("/map") },
+            { icon: Map, label: "Open Map", action: () => navigate("/map") },
+            { icon: Play, label: "Start Task", action: () => {
+              const first = activeTasks.find((t) => t.status === "assigned");
+              if (first) navigate(`/worker/task/${first.id}`);
+            }},
+            { icon: Upload, label: "Upload Proof", action: () => {
+              const inProg = activeTasks.find((t) => t.status === "in_progress");
+              if (inProg) navigate(`/worker/task/${inProg.id}`);
+              else if (activeTasks[0]) navigate(`/worker/task/${activeTasks[0].id}`);
+            }},
+            { icon: Navigation, label: "Navigation", action: () => {
+              const t = activeTasks[0];
+              const r = t ? reports[t.report_id] : null;
+              if (r?.latitude && r?.longitude) {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}`, "_blank");
+              }
+            }},
+            { icon: Headphones, label: "Request Help", action: () => navigate("/notifications") },
+          ].map(({ icon: Icon, label, action }) => (
+            <button
+              key={label}
+              onClick={action}
+              className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 transition-all hover:eco-shadow hover:border-primary/30 active:scale-95"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                <Icon className="h-5 w-5 text-primary" />
+              </div>
+              <span className="text-[11px] font-medium text-foreground text-center leading-tight">{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Completed tasks summary */}
