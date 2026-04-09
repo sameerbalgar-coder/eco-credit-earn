@@ -38,17 +38,25 @@ const AuthPage = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          toast({ title: "Login failed", description: error.message, variant: "destructive" });
+          const msg = error.message?.includes("fetch")
+            ? "Network error. Please check your connection and try again."
+            : error.message;
+          toast({ title: "Login failed", description: msg, variant: "destructive" });
         } else {
           navigate("/");
         }
       } else {
-        const { error } = await signUp(email, password, displayName, selectedRole);
+        const { error, data } = await signUp(email, password, displayName, selectedRole);
         if (error) {
-          toast({ title: "Signup failed", description: error.message, variant: "destructive" });
-        } else {
+          const msg = error.message?.includes("fetch")
+            ? "Network error. Please check your connection and try again."
+            : error.message;
+          toast({ title: "Signup failed", description: msg, variant: "destructive" });
+        } else if (data?.session) {
           toast({ title: "Account created!", description: "Welcome to EcoCredit!" });
           navigate("/");
+        } else if (data?.user && !data.session) {
+          toast({ title: "Check your email", description: "We sent a verification link to " + email });
         }
       }
     } finally {
