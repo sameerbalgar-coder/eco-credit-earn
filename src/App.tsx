@@ -13,6 +13,7 @@ import WalletPage from "./pages/WalletPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import MaterialsPage from "./pages/MaterialsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
@@ -69,6 +70,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               path="/*"
               element={
