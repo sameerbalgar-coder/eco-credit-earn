@@ -14,16 +14,22 @@ const roles: { id: AppRole; label: string; icon: typeof User; desc: string }[] =
   { id: "admin", label: "Municipality / Admin", icon: Building2, desc: "Full system oversight" },
 ];
 
+type Mode = "login" | "signup" | "forgot";
+
 const AuthPage = () => {
-  const { signUp, signIn, user, loading } = useAuth();
+  const { signUp, signIn, resetPassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [selectedRole, setSelectedRole] = useState<AppRole>("citizen");
   const [submitting, setSubmitting] = useState(false);
+
+  const isLogin = mode === "login";
+  const isSignup = mode === "signup";
+  const isForgot = mode === "forgot";
 
   // Redirect if already logged in
   if (!loading && user) {
@@ -35,7 +41,18 @@ const AuthPage = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      if (isLogin) {
+      if (isForgot) {
+        const { error } = await resetPassword(email);
+        if (error) {
+          const msg = error.message?.includes("fetch")
+            ? "Network error. Please check your connection and try again."
+            : error.message;
+          toast({ title: "Reset failed", description: msg, variant: "destructive" });
+        } else {
+          toast({ title: "Check your email", description: "We sent a password reset link to " + email });
+          setMode("login");
+        }
+      } else if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
           const msg = error.message?.includes("fetch")
