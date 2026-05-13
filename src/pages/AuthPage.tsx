@@ -222,5 +222,10 @@ const AuthPage = () => {
             </button>
           )}
         </form>
+      </div>
+    </div>
+  );
+};
 
 export default AuthPage;
+
