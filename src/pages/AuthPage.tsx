@@ -14,16 +14,22 @@ const roles: { id: AppRole; label: string; icon: typeof User; desc: string }[] =
   { id: "admin", label: "Municipality / Admin", icon: Building2, desc: "Full system oversight" },
 ];
 
+type Mode = "login" | "signup" | "forgot";
+
 const AuthPage = () => {
-  const { signUp, signIn, user, loading } = useAuth();
+  const { signUp, signIn, resetPassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [selectedRole, setSelectedRole] = useState<AppRole>("citizen");
   const [submitting, setSubmitting] = useState(false);
+
+  const isLogin = mode === "login";
+  const isSignup = mode === "signup";
+  const isForgot = mode === "forgot";
 
   // Redirect if already logged in
   if (!loading && user) {
@@ -35,7 +41,18 @@ const AuthPage = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      if (isLogin) {
+      if (isForgot) {
+        const { error } = await resetPassword(email);
+        if (error) {
+          const msg = error.message?.includes("fetch")
+            ? "Network error. Please check your connection and try again."
+            : error.message;
+          toast({ title: "Reset failed", description: msg, variant: "destructive" });
+        } else {
+          toast({ title: "Check your email", description: "We sent a password reset link to " + email });
+          setMode("login");
+        }
+      } else if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
           const msg = error.message?.includes("fetch")
@@ -74,28 +91,36 @@ const AuthPage = () => {
           <p className="text-xs text-muted-foreground">Smart Waste Reporting & Rewards</p>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="flex rounded-xl border border-border bg-muted/50 p-1">
-          <button
-            onClick={() => setIsLogin(true)}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-              isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-            }`}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setIsLogin(false)}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-              !isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
+        {/* Tab Toggle - hidden in forgot mode */}
+        {!isForgot && (
+          <div className="flex rounded-xl border border-border bg-muted/50 p-1">
+            <button
+              onClick={() => setMode("login")}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+                isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+              }`}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setMode("signup")}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
+                isSignup ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+        )}
+
+        {isForgot && (
+          <p className="text-center text-sm text-muted-foreground">
+            Enter your email and we'll send you a reset link.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {isSignup && (
             <div>
               <label className="mb-1.5 block text-xs font-medium text-foreground">Display Name</label>
               <Input
@@ -120,21 +145,34 @@ const AuthPage = () => {
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">Password</label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              className="rounded-xl"
-            />
-          </div>
+          {!isForgot && (
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="block text-xs font-medium text-foreground">Password</label>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+                className="rounded-xl"
+              />
+            </div>
+          )}
 
           {/* Role Selection (signup only) */}
-          {!isLogin && (
+          {isSignup && (
             <div>
               <label className="mb-2 block text-xs font-medium text-foreground">Select Your Role</label>
               <div className="grid grid-cols-2 gap-2">
@@ -165,8 +203,24 @@ const AuthPage = () => {
             disabled={submitting}
             className="w-full rounded-xl py-5 text-sm font-semibold"
           >
-            {submitting ? "Please wait..." : isLogin ? "Login" : "Create Account"}
+            {submitting
+              ? "Please wait..."
+              : isForgot
+              ? "Send reset link"
+              : isLogin
+              ? "Login"
+              : "Create Account"}
           </Button>
+
+          {isForgot && (
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              className="block w-full text-center text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              ← Back to login
+            </button>
+          )}
         </form>
       </div>
     </div>
@@ -174,3 +228,4 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
