@@ -1,126 +1,191 @@
-import { useEffect, useState } from "react";
-import { MapPin } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
 
-const statusColors: Record<string, string> = {
-  pending: "bg-destructive",
-  assigned: "bg-eco-warning",
-  in_progress: "bg-eco-warning",
-  completed: "bg-eco-success",
+const STATUS_META: Record<string, { color: string; label: string }> = {
+  pending: { color: "#ef4444", label: "Reported" },
+  assigned: { color: "#eab308", label: "In Progress" },
+  in_progress: { color: "#eab308", label: "In Progress" },
+  completed: { color: "#22c55e", label: "Completed" },
+};
+
+const STATUS_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "pending", label: "Reported", color: "#ef4444" },
+  { id: "in_progress", label: "In Progress", color: "#eab308" },
+  { id: "completed", label: "Completed", color: "#22c55e" },
+];
+
+const FlyToUser = ({ pos }: { pos: [number, number] | null }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (pos) map.setView(pos, 14);
+  }, [pos, map]);
+  return null;
 };
 
 const MapPage = () => {
   const [reports, setReports] = useState<any[]>([]);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [userPos, setUserPos] = useState<[number, number] | null>(null);
+  const [filter, setFilter] = useState<string>("all");
 
+  // Geolocation
   useEffect(() => {
-    supabase
-      .from("waste_reports")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .then(({ data }) => { if (data) setReports(data); });
+    if (!navigator.geolocation) return;
+    const watch = navigator.geolocation.watchPosition(
+      (p) => setUserPos([p.coords.latitude, p.coords.longitude]),
+      () => {},
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watch);
   }, []);
+
+  // Initial fetch + realtime subscription
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("waste_reports")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (data) setReports(data);
+    };
+    load();
+
+    const channel = supabase
+      .channel("waste_reports_map")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "waste_reports" },
+        (payload) => {
+          setReports((prev) => {
+            if (payload.eventType === "INSERT") return [payload.new as any, ...prev];
+            if (payload.eventType === "UPDATE")
+              return prev.map((r) => (r.id === (payload.new as any).id ? (payload.new as any) : r));
+            if (payload.eventType === "DELETE")
+              return prev.filter((r) => r.id !== (payload.old as any).id);
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    const withCoords = reports.filter((r) => r.latitude && r.longitude);
+    if (filter === "all") return withCoords;
+    if (filter === "in_progress")
+      return withCoords.filter((r) => r.status === "in_progress" || r.status === "assigned");
+    return withCoords.filter((r) => r.status === filter);
+  }, [reports, filter]);
+
+  const center: [number, number] = userPos ?? [20.5937, 78.9629]; // India fallback
 
   return (
     <div className="px-4 py-6 space-y-4">
-      <h1 className="text-lg font-bold text-foreground">Waste Map</h1>
-      <p className="text-sm text-muted-foreground">
-        View reported waste locations and their status
-      </p>
+      <div>
+        <h1 className="text-lg font-bold text-foreground">Live Waste Map</h1>
+        <p className="text-sm text-muted-foreground">
+          Real-time issue tracking · {filtered.length} visible
+        </p>
+      </div>
 
-      {/* Map area with report markers */}
-      <div className="relative h-[55vh] overflow-hidden rounded-2xl border border-border bg-muted">
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <MapPin className="h-8 w-8 text-primary" />
-          </div>
-          <p className="text-sm font-medium text-foreground">Interactive Map</p>
-          <p className="text-xs text-muted-foreground">{reports.length} waste reports plotted</p>
-        </div>
+      {/* Filters */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              filter === f.id
+                ? "border-primary bg-primary/10 text-foreground"
+                : "border-border bg-card text-muted-foreground"
+            }`}
+          >
+            {f.color && <span className="h-2 w-2 rounded-full" style={{ background: f.color }} />}
+            {f.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Simulated markers based on real data */}
-        {reports.slice(0, 8).map((r, i) => {
-          const positions = [
-            { top: "20%", left: "30%" }, { top: "45%", left: "60%" },
-            { top: "35%", left: "45%" }, { top: "65%", left: "25%" },
-            { top: "55%", left: "70%" }, { top: "25%", left: "55%" },
-            { top: "70%", left: "50%" }, { top: "40%", left: "20%" },
-          ];
-          const pos = positions[i % positions.length];
-          return (
-            <button
-              key={r.id}
-              onClick={() => setSelectedReport(r)}
-              className={`absolute h-4 w-4 rounded-full border-2 border-card ${statusColors[r.status] ?? "bg-muted-foreground"} transition-transform hover:scale-150`}
-              style={{ top: pos.top, left: pos.left }}
-              title={`${r.waste_type} - ${r.status}`}
-            />
-          );
-        })}
+      {/* Map */}
+      <div className="h-[60vh] overflow-hidden rounded-2xl border border-border">
+        <MapContainer
+          center={center}
+          zoom={userPos ? 14 : 5}
+          style={{ height: "100%", width: "100%" }}
+          scrollWheelZoom
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <FlyToUser pos={userPos} />
+
+          {userPos && (
+            <CircleMarker
+              center={userPos}
+              radius={8}
+              pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.9 }}
+            >
+              <Popup>You are here</Popup>
+            </CircleMarker>
+          )}
+
+          {filtered.map((r) => {
+            const meta = STATUS_META[r.status] ?? { color: "#9ca3af", label: r.status };
+            return (
+              <CircleMarker
+                key={r.id}
+                center={[Number(r.latitude), Number(r.longitude)]}
+                radius={9}
+                pathOptions={{
+                  color: meta.color,
+                  fillColor: meta.color,
+                  fillOpacity: 0.85,
+                  weight: 2,
+                }}
+              >
+                <Popup>
+                  <div className="space-y-1">
+                    <div className="font-semibold capitalize">{r.waste_type}</div>
+                    <div className="text-xs">
+                      Status:{" "}
+                      <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
+                    </div>
+                    {r.description && <div className="text-xs">{r.description}</div>}
+                    {r.address && <div className="text-[10px] opacity-70">{r.address}</div>}
+                    <div className="text-[10px] opacity-60">
+                      {new Date(r.updated_at ?? r.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
+        </MapContainer>
       </div>
 
       {/* Legend */}
       <div className="flex items-center justify-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-destructive" />
-          <span className="text-muted-foreground">Unassigned</span>
+          <div className="h-3 w-3 rounded-full" style={{ background: "#ef4444" }} />
+          <span className="text-muted-foreground">Reported</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-eco-warning" />
-          <span className="text-muted-foreground">Assigned</span>
+          <div className="h-3 w-3 rounded-full" style={{ background: "#eab308" }} />
+          <span className="text-muted-foreground">In Progress</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-eco-success" />
+          <div className="h-3 w-3 rounded-full" style={{ background: "#22c55e" }} />
           <span className="text-muted-foreground">Completed</span>
         </div>
       </div>
-
-      {/* Selected report details */}
-      {selectedReport && (
-        <div className="rounded-xl border border-border bg-card p-4 animate-fade-in space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground capitalize">{selectedReport.waste_type} Waste</h3>
-            <span className={`text-xs font-medium capitalize px-2 py-0.5 rounded-lg ${
-              selectedReport.status === "completed" ? "bg-eco-success/10 text-eco-success" :
-              selectedReport.status === "pending" ? "bg-destructive/10 text-destructive" :
-              "bg-eco-warning/10 text-eco-warning"
-            }`}>{selectedReport.status}</span>
-          </div>
-          {selectedReport.description && (
-            <p className="text-xs text-muted-foreground">{selectedReport.description}</p>
-          )}
-          {selectedReport.quantity_kg && (
-            <p className="text-xs text-muted-foreground">Estimated: {selectedReport.quantity_kg} kg</p>
-          )}
-          <p className="text-[10px] text-muted-foreground">{selectedReport.address ?? "No address"}</p>
-          <button onClick={() => setSelectedReport(null)} className="text-xs text-primary font-medium">
-            Close
-          </button>
-        </div>
-      )}
-
-      {/* Recent reports list */}
-      {reports.length > 0 && (
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-foreground">Recent Reports</h2>
-          <div className="space-y-2">
-            {reports.slice(0, 5).map((r: any) => (
-              <button
-                key={r.id}
-                onClick={() => setSelectedReport(r)}
-                className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-3 text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`h-3 w-3 rounded-full ${statusColors[r.status]}`} />
-                  <span className="text-sm font-medium text-foreground capitalize">{r.waste_type}</span>
-                </div>
-                <span className="text-xs text-muted-foreground capitalize">{r.status}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
