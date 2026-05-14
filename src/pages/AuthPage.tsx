@@ -63,17 +63,21 @@ const AuthPage = () => {
           navigate("/");
         }
       } else {
-        const { error, data } = await signUp(email, password, displayName, selectedRole);
-        if (error) {
-          const msg = error.message?.includes("fetch")
-            ? "Network error. Please check your connection and try again."
-            : error.message;
-          toast({ title: "Signup failed", description: msg, variant: "destructive" });
-        } else if (data?.session) {
+        // Prototype mode: accept any signup, auto sign-in if account exists
+        const { data } = await signUp(email, password, displayName, selectedRole);
+        if (data?.session) {
           toast({ title: "Account created!", description: "Welcome to EcoCredit!" });
           navigate("/");
-        } else if (data?.user && !data.session) {
-          toast({ title: "Check your email", description: "We sent a verification link to " + email });
+        } else {
+          // Try signing in (covers already-registered email or auto-confirm off)
+          const { error: signInError } = await signIn(email, password);
+          if (!signInError) {
+            toast({ title: "Welcome back!", description: "Logged in successfully." });
+            navigate("/");
+          } else {
+            toast({ title: "Account created!", description: "Check your email to verify, or try logging in." });
+            setMode("login");
+          }
         }
       }
     } finally {
