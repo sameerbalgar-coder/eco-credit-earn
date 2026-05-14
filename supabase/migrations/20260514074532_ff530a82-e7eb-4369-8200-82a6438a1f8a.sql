@@ -1,0 +1,1 @@
+ALTER TABLE public.waste_reports REPLICA IDENTITY FULL;
