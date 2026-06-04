@@ -216,6 +216,54 @@ const AuthPage = () => {
               : "Create Account"}
           </Button>
 
+          {/* Guest login — visible on login & signup tabs */}
+          {(isLogin || isSignup) && (
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+          )}
+
+          {(isLogin || isSignup) && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  const guestId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+                  const guestEmail = `guest-${guestId.slice(0, 8)}@demo.local`;
+                  const guestPassword = "demo1234";
+                  const { data } = await signUp(guestEmail, guestPassword, "Guest User", "citizen");
+                  if (data?.session) {
+                    toast({ title: "Welcome!", description: "You're logged in as a guest." });
+                    navigate("/");
+                  } else {
+                    const { error: signInError } = await signIn(guestEmail, guestPassword);
+                    if (!signInError) {
+                      toast({ title: "Welcome!", description: "You're logged in as a guest." });
+                      navigate("/");
+                    } else {
+                      toast({ title: "Guest login failed", description: signInError.message, variant: "destructive" });
+                    }
+                  }
+                } catch (e: any) {
+                  toast({ title: "Guest login failed", description: e?.message ?? "Something went wrong.", variant: "destructive" });
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              className="w-full rounded-xl py-5 text-sm font-semibold"
+            >
+              Continue as Guest
+            </Button>
+          )}
+
           {isForgot && (
             <button
               type="button"
