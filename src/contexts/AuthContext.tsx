@@ -61,31 +61,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const applySession = (nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    if (!nextSession?.user) {
+      setProfile(null);
+    }
+    setLoading(false);
+  };
+
   const refreshProfile = async () => {
     if (user) await fetchProfile(user.id);
   };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
+      (event, nextSession) => {
+        applySession(nextSession);
+        if (event === "SIGNED_OUT") return;
+
+        const userId = nextSession?.user?.id;
+        if (userId) {
+          queueMicrotask(() => {
+            void fetchProfile(userId);
+          });
         }
-        setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      applySession(session);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        void fetchProfile(session.user.id);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
