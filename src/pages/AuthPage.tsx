@@ -31,11 +31,10 @@ const AuthPage = () => {
   const isSignup = mode === "signup";
   const isForgot = mode === "forgot";
 
-  // Redirect if already logged in
-  if (!loading && user) {
-    navigate("/", { replace: true });
-    return null;
-  }
+  // Redirect if already logged in (in effect — never call navigate during render)
+  useEffect(() => {
+    if (!loading && user) navigate("/", { replace: true });
+  }, [loading, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
