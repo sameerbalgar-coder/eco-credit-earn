@@ -290,14 +290,22 @@ const WorkerTaskDetail = () => {
             <p className="text-xs font-medium text-muted-foreground mb-1.5">📷 Before Cleaning</p>
             <button
               onClick={() => beforeRef.current?.click()}
-              className="flex w-full aspect-[4/3] flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 overflow-hidden transition-colors hover:border-primary/40"
+              className="group relative flex w-full aspect-[4/3] flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 overflow-hidden transition-colors hover:border-primary/40"
             >
               {beforePhoto?.preview ? (
                 <img src={beforePhoto.preview} alt="Before" className="h-full w-full object-cover" />
               ) : (
                 <>
-                  <Camera className="h-6 w-6 text-muted-foreground mb-1" />
-                  <span className="text-[10px] text-muted-foreground">Take Photo</span>
+                  <img
+                    src="https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=640&q=70"
+                    alt="Example: litter before cleanup"
+                    className="absolute inset-0 h-full w-full object-cover opacity-60"
+                    loading="lazy"
+                  />
+                  <div className="relative z-10 flex flex-col items-center rounded-lg bg-background/70 px-3 py-2 backdrop-blur-sm">
+                    <Camera className="h-5 w-5 text-foreground mb-0.5" />
+                    <span className="text-[10px] font-medium text-foreground">Take Before Photo</span>
+                  </div>
                 </>
               )}
             </button>
@@ -308,14 +316,22 @@ const WorkerTaskDetail = () => {
             <p className="text-xs font-medium text-muted-foreground mb-1.5">✅ After Cleaning</p>
             <button
               onClick={() => afterRef.current?.click()}
-              className="flex w-full aspect-[4/3] flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 overflow-hidden transition-colors hover:border-primary/40"
+              className="group relative flex w-full aspect-[4/3] flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 overflow-hidden transition-colors hover:border-primary/40"
             >
               {afterPhoto?.preview ? (
                 <img src={afterPhoto.preview} alt="After" className="h-full w-full object-cover" />
               ) : (
                 <>
-                  <Camera className="h-6 w-6 text-muted-foreground mb-1" />
-                  <span className="text-[10px] text-muted-foreground">Take Photo</span>
+                  <img
+                    src="https://images.unsplash.com/photo-1528323273322-d81458248d40?auto=format&fit=crop&w=640&q=70"
+                    alt="Example: clean street after cleanup"
+                    className="absolute inset-0 h-full w-full object-cover opacity-60"
+                    loading="lazy"
+                  />
+                  <div className="relative z-10 flex flex-col items-center rounded-lg bg-background/70 px-3 py-2 backdrop-blur-sm">
+                    <Camera className="h-5 w-5 text-foreground mb-0.5" />
+                    <span className="text-[10px] font-medium text-foreground">Take After Photo</span>
+                  </div>
                 </>
               )}
             </button>
