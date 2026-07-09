@@ -273,7 +273,7 @@ const PublicFeedPage = () => {
               {r.photo_urls?.length > 0 && (
                 <div className="flex gap-0.5 overflow-x-auto">
                   {r.photo_urls.slice(0, 2).map((url: string, i: number) => (
-                    <img key={i} src={url} alt="" className="h-36 flex-1 object-cover min-w-0" />
+                    <img key={i} src={url} alt="" onClick={() => setViewer({ url, type: "image" })} className="h-36 flex-1 object-cover min-w-0 cursor-zoom-in" />
                   ))}
                 </div>
               )}
