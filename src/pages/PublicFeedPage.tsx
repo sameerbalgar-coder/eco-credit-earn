@@ -307,7 +307,39 @@ const PublicFeedPage = () => {
           ))}
         </div>
       )}
+
+      {viewer && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setViewer(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setViewer(null); }}
+            className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 p-2 text-white"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {viewer.type === "video" ? (
+            <video
+              src={viewer.url}
+              className="max-h-full max-w-full rounded-lg"
+              controls
+              autoPlay
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={viewer.url}
+              alt=""
+              className="max-h-full max-w-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      )}
     </div>
+
   );
 };
 
