@@ -26,6 +26,8 @@ const PublicFeedPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [viewer, setViewer] = useState<{ url: string; type: "image" | "video" } | null>(null);
+
 
   useEffect(() => {
     if (!user) return;
@@ -232,10 +234,21 @@ const PublicFeedPage = () => {
           ) : posts.map(p => (
             <div key={p.id} className="rounded-xl border border-border bg-card overflow-hidden">
               {p.media_url && (p.media_type === "video" ? (
-                <video src={p.media_url} className="w-full max-h-80 object-cover bg-black" controls />
+                <video
+                  src={p.media_url}
+                  className="w-full max-h-80 object-cover bg-black cursor-zoom-in"
+                  controls
+                  onClick={() => setViewer({ url: p.media_url, type: "video" })}
+                />
               ) : (
-                <img src={p.media_url} alt="" className="w-full max-h-80 object-cover" />
+                <img
+                  src={p.media_url}
+                  alt=""
+                  className="w-full max-h-80 object-cover cursor-zoom-in"
+                  onClick={() => setViewer({ url: p.media_url, type: "image" })}
+                />
               ))}
+
               <div className="p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
@@ -260,7 +273,7 @@ const PublicFeedPage = () => {
               {r.photo_urls?.length > 0 && (
                 <div className="flex gap-0.5 overflow-x-auto">
                   {r.photo_urls.slice(0, 2).map((url: string, i: number) => (
-                    <img key={i} src={url} alt="" className="h-36 flex-1 object-cover min-w-0" />
+                    <img key={i} src={url} alt="" onClick={() => setViewer({ url, type: "image" })} className="h-36 flex-1 object-cover min-w-0 cursor-zoom-in" />
                   ))}
                 </div>
               )}
@@ -294,7 +307,39 @@ const PublicFeedPage = () => {
           ))}
         </div>
       )}
+
+      {viewer && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setViewer(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setViewer(null); }}
+            className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 p-2 text-white"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {viewer.type === "video" ? (
+            <video
+              src={viewer.url}
+              className="max-h-full max-w-full rounded-lg"
+              controls
+              autoPlay
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={viewer.url}
+              alt=""
+              className="max-h-full max-w-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      )}
     </div>
+
   );
 };
 
