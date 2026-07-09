@@ -26,6 +26,8 @@ const PublicFeedPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [viewer, setViewer] = useState<{ url: string; type: "image" | "video" } | null>(null);
+
 
   useEffect(() => {
     if (!user) return;
