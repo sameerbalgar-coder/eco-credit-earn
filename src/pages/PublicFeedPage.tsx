@@ -234,10 +234,21 @@ const PublicFeedPage = () => {
           ) : posts.map(p => (
             <div key={p.id} className="rounded-xl border border-border bg-card overflow-hidden">
               {p.media_url && (p.media_type === "video" ? (
-                <video src={p.media_url} className="w-full max-h-80 object-cover bg-black" controls />
+                <video
+                  src={p.media_url}
+                  className="w-full max-h-80 object-cover bg-black cursor-zoom-in"
+                  controls
+                  onClick={() => setViewer({ url: p.media_url, type: "video" })}
+                />
               ) : (
-                <img src={p.media_url} alt="" className="w-full max-h-80 object-cover" />
+                <img
+                  src={p.media_url}
+                  alt=""
+                  className="w-full max-h-80 object-cover cursor-zoom-in"
+                  onClick={() => setViewer({ url: p.media_url, type: "image" })}
+                />
               ))}
+
               <div className="p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
