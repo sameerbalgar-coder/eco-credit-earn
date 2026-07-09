@@ -48,6 +48,47 @@ const PublicFeedPage = () => {
       }
       setLoading(false);
     });
+
+    const postsChannel = supabase
+      .channel("community_posts_feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "community_posts" },
+        (payload) => {
+          setPosts((prev) => prev.some((p) => p.id === (payload.new as any).id) ? prev : [payload.new as any, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "community_posts" },
+        (payload) => {
+          setPosts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
+        }
+      )
+      .subscribe();
+
+    const reportsChannel = supabase
+      .channel("waste_reports_feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "waste_reports" },
+        (payload) => {
+          setReports((prev) => prev.some((r) => r.id === (payload.new as any).id) ? prev : [payload.new as any, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "waste_reports" },
+        (payload) => {
+          setReports((prev) => prev.map((r) => r.id === (payload.new as any).id ? { ...r, ...(payload.new as any) } : r));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(reportsChannel);
+    };
   }, [user]);
 
   const handleUpvote = async (reportId: string) => {
