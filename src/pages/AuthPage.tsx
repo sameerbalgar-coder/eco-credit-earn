@@ -198,10 +198,12 @@ const AuthPage = () => {
             </div>
           )}
 
-          {/* Role Selection (signup only) */}
-          {isSignup && (
+          {/* Role Selection (signup + guest access) */}
+          {!isForgot && (
             <div>
-              <label className="mb-2 block text-xs font-medium text-foreground">Select Your Role</label>
+              <label className="mb-2 block text-xs font-medium text-foreground">
+                {isSignup ? "Select Your Role" : "Role (for Guest access)"}
+              </label>
               <div className="grid grid-cols-2 gap-2">
                 {roles.map((r) => (
                   <button
