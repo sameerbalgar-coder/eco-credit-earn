@@ -72,19 +72,30 @@ const AuthPage = () => {
             : error.message;
           toast({ title: "Login failed", description: msg, variant: "destructive" });
         } else {
+          const { data: { user: u } } = await supabase.auth.getUser();
+          const role = u ? await fetchRole(u.id) : null;
+          toast({
+            title: "Welcome back!",
+            description: role ? `Signed in as ${roleLabels[role]}.` : "Signed in successfully.",
+          });
           navigate("/");
         }
       } else {
         // Prototype mode: accept any signup, auto sign-in if account exists
         const { data } = await signUp(email, password, displayName, selectedRole);
         if (data?.session) {
-          toast({ title: "Account created!", description: "Welcome to EcoCredit!" });
+          toast({ title: "Account created!", description: `Signed in as ${roleLabels[selectedRole]}.` });
           navigate("/");
         } else {
           // Try signing in (covers already-registered email or auto-confirm off)
           const { error: signInError } = await signIn(email, password);
           if (!signInError) {
-            toast({ title: "Welcome back!", description: "Logged in successfully." });
+            const { data: { user: u } } = await supabase.auth.getUser();
+            const role = u ? await fetchRole(u.id) : null;
+            toast({
+              title: "Welcome back!",
+              description: role ? `Signed in as ${roleLabels[role]}.` : "Logged in successfully.",
+            });
             navigate("/");
           } else {
             toast({ title: "Account created!", description: "Check your email to verify, or try logging in." });
