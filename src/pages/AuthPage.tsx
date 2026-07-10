@@ -264,14 +264,15 @@ const AuthPage = () => {
                   const guestId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
                   const guestEmail = `guest-${guestId.slice(0, 8)}@demo.local`;
                   const guestPassword = "demo1234";
-                  const { data } = await signUp(guestEmail, guestPassword, "Guest User", "citizen");
+                  const { data } = await signUp(guestEmail, guestPassword, `Guest ${roleLabels[selectedRole]}`, selectedRole);
+                  const guestDesc = `Temporary ${roleLabels[selectedRole]} access.`;
                   if (data?.session) {
-                    toast({ title: "Welcome!", description: "You're logged in as a guest." });
+                    toast({ title: "Welcome, Guest!", description: guestDesc });
                     navigate("/");
                   } else {
                     const { error: signInError } = await signIn(guestEmail, guestPassword);
                     if (!signInError) {
-                      toast({ title: "Welcome!", description: "You're logged in as a guest." });
+                      toast({ title: "Welcome, Guest!", description: guestDesc });
                       navigate("/");
                     } else {
                       toast({ title: "Guest login failed", description: signInError.message, variant: "destructive" });
