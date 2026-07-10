@@ -6,6 +6,19 @@ import { useNavigate } from "react-router-dom";
 import { Leaf, User, HardHat, ClipboardCheck, Building2 } from "lucide-react";
 import ecoLogo from "@/assets/ecocredit-logo.png";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const roleLabels: Record<AppRole, string> = {
+  citizen: "Citizen / Volunteer",
+  worker: "Worker",
+  supervisor: "Supervisor",
+  admin: "Municipality / Admin",
+};
+
+const fetchRole = async (userId: string): Promise<AppRole | null> => {
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  return (data?.role as AppRole) ?? null;
+};
 
 const roles: { id: AppRole; label: string; icon: typeof User; desc: string }[] = [
   { id: "citizen", label: "Citizen / Volunteer", icon: User, desc: "Report waste & earn credits" },
@@ -59,19 +72,30 @@ const AuthPage = () => {
             : error.message;
           toast({ title: "Login failed", description: msg, variant: "destructive" });
         } else {
+          const { data: { user: u } } = await supabase.auth.getUser();
+          const role = u ? await fetchRole(u.id) : null;
+          toast({
+            title: "Welcome back!",
+            description: role ? `Signed in as ${roleLabels[role]}.` : "Signed in successfully.",
+          });
           navigate("/");
         }
       } else {
         // Prototype mode: accept any signup, auto sign-in if account exists
         const { data } = await signUp(email, password, displayName, selectedRole);
         if (data?.session) {
-          toast({ title: "Account created!", description: "Welcome to EcoCredit!" });
+          toast({ title: "Account created!", description: `Signed in as ${roleLabels[selectedRole]}.` });
           navigate("/");
         } else {
           // Try signing in (covers already-registered email or auto-confirm off)
           const { error: signInError } = await signIn(email, password);
           if (!signInError) {
-            toast({ title: "Welcome back!", description: "Logged in successfully." });
+            const { data: { user: u } } = await supabase.auth.getUser();
+            const role = u ? await fetchRole(u.id) : null;
+            toast({
+              title: "Welcome back!",
+              description: role ? `Signed in as ${roleLabels[role]}.` : "Logged in successfully.",
+            });
             navigate("/");
           } else {
             toast({ title: "Account created!", description: "Check your email to verify, or try logging in." });
@@ -174,10 +198,12 @@ const AuthPage = () => {
             </div>
           )}
 
-          {/* Role Selection (signup only) */}
-          {isSignup && (
+          {/* Role Selection (signup + guest access) */}
+          {!isForgot && (
             <div>
-              <label className="mb-2 block text-xs font-medium text-foreground">Select Your Role</label>
+              <label className="mb-2 block text-xs font-medium text-foreground">
+                {isSignup ? "Select Your Role" : "Role (for Guest access)"}
+              </label>
               <div className="grid grid-cols-2 gap-2">
                 {roles.map((r) => (
                   <button
@@ -238,14 +264,15 @@ const AuthPage = () => {
                   const guestId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
                   const guestEmail = `guest-${guestId.slice(0, 8)}@demo.local`;
                   const guestPassword = "demo1234";
-                  const { data } = await signUp(guestEmail, guestPassword, "Guest User", "citizen");
+                  const { data } = await signUp(guestEmail, guestPassword, `Guest ${roleLabels[selectedRole]}`, selectedRole);
+                  const guestDesc = `Temporary ${roleLabels[selectedRole]} access.`;
                   if (data?.session) {
-                    toast({ title: "Welcome!", description: "You're logged in as a guest." });
+                    toast({ title: "Welcome, Guest!", description: guestDesc });
                     navigate("/");
                   } else {
                     const { error: signInError } = await signIn(guestEmail, guestPassword);
                     if (!signInError) {
-                      toast({ title: "Welcome!", description: "You're logged in as a guest." });
+                      toast({ title: "Welcome, Guest!", description: guestDesc });
                       navigate("/");
                     } else {
                       toast({ title: "Guest login failed", description: signInError.message, variant: "destructive" });
