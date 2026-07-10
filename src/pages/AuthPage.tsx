@@ -6,6 +6,19 @@ import { useNavigate } from "react-router-dom";
 import { Leaf, User, HardHat, ClipboardCheck, Building2 } from "lucide-react";
 import ecoLogo from "@/assets/ecocredit-logo.png";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const roleLabels: Record<AppRole, string> = {
+  citizen: "Citizen / Volunteer",
+  worker: "Worker",
+  supervisor: "Supervisor",
+  admin: "Municipality / Admin",
+};
+
+const fetchRole = async (userId: string): Promise<AppRole | null> => {
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  return (data?.role as AppRole) ?? null;
+};
 
 const roles: { id: AppRole; label: string; icon: typeof User; desc: string }[] = [
   { id: "citizen", label: "Citizen / Volunteer", icon: User, desc: "Report waste & earn credits" },
