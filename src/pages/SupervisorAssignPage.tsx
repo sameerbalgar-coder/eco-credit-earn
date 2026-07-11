@@ -239,6 +239,32 @@ const SupervisorAssignPage = () => {
         })}
       </div>
 
+      {/* Type filter chips */}
+      {allTypes.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <button
+            onClick={() => setTypeFilter("all")}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              typeFilter === "all" ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
+            }`}
+          >
+            All
+          </button>
+          {allTypes.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                typeFilter === t ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+
+
       {/* List */}
       {list.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-6 text-center">
