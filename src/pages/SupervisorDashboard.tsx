@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   UserPlus,
   Send,
+  Flame,
+  MessageSquare,
 } from "lucide-react";
 
 const SupervisorDashboard = () => {
