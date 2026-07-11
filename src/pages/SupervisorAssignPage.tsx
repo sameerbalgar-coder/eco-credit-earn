@@ -398,28 +398,54 @@ const SupervisorAssignPage = () => {
             {workers.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">No workers registered yet.</p>
             ) : (
-              <div className="space-y-2">
-                {workers.map((w) => (
-                  <button
-                    key={w.id}
-                    onClick={() => setSelectedWorker(w.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                      selectedWorker === w.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card"
-                    }`}
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {(w.display_name || "W").slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{w.display_name || "Worker"}</p>
-                      <p className="truncate text-xs text-muted-foreground">{w.email}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="flex h-2 w-2 rounded-full bg-eco-success" />
+                  <span>{onlineWorkerCount} online now</span>
+                </div>
+                <div className="space-y-2">
+                  {[...workers]
+                    .sort((a, b) => Number(onlineUserIds.has(b.id)) - Number(onlineUserIds.has(a.id)))
+                    .map((w) => {
+                      const online = onlineUserIds.has(w.id);
+                      return (
+                        <button
+                          key={w.id}
+                          onClick={() => setSelectedWorker(w.id)}
+                          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                            selectedWorker === w.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-card"
+                          }`}
+                        >
+                          <div className="relative">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                              {(w.display_name || "W").slice(0, 2).toUpperCase()}
+                            </div>
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${
+                                online ? "bg-eco-success" : "bg-muted-foreground/40"
+                              }`}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-foreground">{w.display_name || "Worker"}</p>
+                            <p className="truncate text-xs text-muted-foreground">{w.email}</p>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              online ? "bg-eco-success/10 text-eco-success" : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {online ? "Online" : "Offline"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </>
             )}
+
 
             <button
               onClick={handleAssign}
