@@ -60,10 +60,11 @@ const timeAgo = (dateStr: string) => {
 
 const SupervisorAssignPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, onlineUserIds } = useAuth();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("pending");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { display_name: string | null; email: string | null }>>({});
@@ -152,6 +153,12 @@ const SupervisorAssignPage = () => {
     completed: completed.length,
   };
 
+  const allTypes = useMemo(() => {
+    const set = new Set<string>();
+    reports.forEach((r) => r.waste_type && set.add(r.waste_type));
+    return Array.from(set).sort();
+  }, [reports]);
+
   const handleAssign = async () => {
     if (!assignFor || !selectedWorker || !user) return;
     setAssigning(true);
@@ -192,7 +199,9 @@ const SupervisorAssignPage = () => {
     { key: "completed", label: "Completed", count: stats.completed, icon: CheckCircle, color: "text-eco-success" },
   ];
 
-  const list = tab === "pending" ? pending : tab === "in_progress" ? inProgress : completed;
+  const baseList = tab === "pending" ? pending : tab === "in_progress" ? inProgress : completed;
+  const list = typeFilter === "all" ? baseList : baseList.filter((r) => r.waste_type === typeFilter);
+  const onlineWorkerCount = workers.filter((w) => onlineUserIds.has(w.id)).length;
 
   return (
     <div className="px-4 py-6 space-y-5 pb-24">
