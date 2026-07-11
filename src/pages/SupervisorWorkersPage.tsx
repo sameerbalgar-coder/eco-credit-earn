@@ -145,7 +145,8 @@ const SupervisorWorkersPage = () => {
                 Share Location
               </button>
             </div>
-          ))}
+              );
+            })}
         </div>
       )}
     </div>
