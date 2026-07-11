@@ -1,0 +1,1 @@
+CREATE POLICY "Supervisors and admins can delete community posts" ON public.community_posts FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'supervisor') OR public.has_role(auth.uid(), 'admin'));
