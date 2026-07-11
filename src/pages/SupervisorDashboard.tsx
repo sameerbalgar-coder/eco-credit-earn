@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   UserPlus,
   Send,
+  Flame,
+  MessageSquare,
 } from "lucide-react";
 
 const SupervisorDashboard = () => {
@@ -153,15 +155,28 @@ const SupervisorDashboard = () => {
           </button>
 
           <button
-            onClick={() => navigate("/report")}
+            onClick={() => navigate("/supervisor/hotspots")}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:eco-shadow active:scale-[0.97]"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10">
+              <Flame className="h-6 w-6 text-destructive" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-foreground">Hotspots</p>
+              <p className="text-[10px] text-muted-foreground">Report density</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/supervisor/community")}
             className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:eco-shadow active:scale-[0.97]"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-              <Camera className="h-6 w-6 text-primary" />
+              <MessageSquare className="h-6 w-6 text-primary" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-foreground">Camera</p>
-              <p className="text-[10px] text-muted-foreground">Add photos</p>
+              <p className="text-sm font-medium text-foreground">Community</p>
+              <p className="text-[10px] text-muted-foreground">Moderate feed</p>
             </div>
           </button>
         </div>

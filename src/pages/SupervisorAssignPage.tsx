@@ -60,10 +60,11 @@ const timeAgo = (dateStr: string) => {
 
 const SupervisorAssignPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, onlineUserIds } = useAuth();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("pending");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { display_name: string | null; email: string | null }>>({});
@@ -152,6 +153,12 @@ const SupervisorAssignPage = () => {
     completed: completed.length,
   };
 
+  const allTypes = useMemo(() => {
+    const set = new Set<string>();
+    reports.forEach((r) => r.waste_type && set.add(r.waste_type));
+    return Array.from(set).sort();
+  }, [reports]);
+
   const handleAssign = async () => {
     if (!assignFor || !selectedWorker || !user) return;
     setAssigning(true);
@@ -192,7 +199,9 @@ const SupervisorAssignPage = () => {
     { key: "completed", label: "Completed", count: stats.completed, icon: CheckCircle, color: "text-eco-success" },
   ];
 
-  const list = tab === "pending" ? pending : tab === "in_progress" ? inProgress : completed;
+  const baseList = tab === "pending" ? pending : tab === "in_progress" ? inProgress : completed;
+  const list = typeFilter === "all" ? baseList : baseList.filter((r) => r.waste_type === typeFilter);
+  const onlineWorkerCount = workers.filter((w) => onlineUserIds.has(w.id)).length;
 
   return (
     <div className="px-4 py-6 space-y-5 pb-24">
@@ -229,6 +238,32 @@ const SupervisorAssignPage = () => {
           );
         })}
       </div>
+
+      {/* Type filter chips */}
+      {allTypes.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <button
+            onClick={() => setTypeFilter("all")}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              typeFilter === "all" ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
+            }`}
+          >
+            All
+          </button>
+          {allTypes.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                typeFilter === t ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+
 
       {/* List */}
       {list.length === 0 ? (
@@ -363,28 +398,54 @@ const SupervisorAssignPage = () => {
             {workers.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">No workers registered yet.</p>
             ) : (
-              <div className="space-y-2">
-                {workers.map((w) => (
-                  <button
-                    key={w.id}
-                    onClick={() => setSelectedWorker(w.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                      selectedWorker === w.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card"
-                    }`}
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {(w.display_name || "W").slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{w.display_name || "Worker"}</p>
-                      <p className="truncate text-xs text-muted-foreground">{w.email}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="flex h-2 w-2 rounded-full bg-eco-success" />
+                  <span>{onlineWorkerCount} online now</span>
+                </div>
+                <div className="space-y-2">
+                  {[...workers]
+                    .sort((a, b) => Number(onlineUserIds.has(b.id)) - Number(onlineUserIds.has(a.id)))
+                    .map((w) => {
+                      const online = onlineUserIds.has(w.id);
+                      return (
+                        <button
+                          key={w.id}
+                          onClick={() => setSelectedWorker(w.id)}
+                          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                            selectedWorker === w.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-card"
+                          }`}
+                        >
+                          <div className="relative">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                              {(w.display_name || "W").slice(0, 2).toUpperCase()}
+                            </div>
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${
+                                online ? "bg-eco-success" : "bg-muted-foreground/40"
+                              }`}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-foreground">{w.display_name || "Worker"}</p>
+                            <p className="truncate text-xs text-muted-foreground">{w.email}</p>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              online ? "bg-eco-success/10 text-eco-success" : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {online ? "Online" : "Offline"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </>
             )}
+
 
             <button
               onClick={handleAssign}

@@ -8,9 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 const SupervisorWorkersPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, onlineUserIds } = useAuth();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const onlineCount = workers.filter((w) => onlineUserIds.has(w.id)).length;
 
   useEffect(() => {
     fetchWorkers();
@@ -74,7 +75,7 @@ const SupervisorWorkersPage = () => {
           <span className="text-sm font-semibold text-foreground">Team Overview</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          {workers.length} worker{workers.length !== 1 ? "s" : ""} registered. Workers sign up with the "Worker" role.
+          {workers.length} worker{workers.length !== 1 ? "s" : ""} registered • <span className="font-semibold text-eco-success">{onlineCount} online now</span>
         </p>
       </div>
 
@@ -91,18 +92,36 @@ const SupervisorWorkersPage = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {workers.map((w) => (
+          {[...workers]
+            .sort((a, b) => Number(onlineUserIds.has(b.id)) - Number(onlineUserIds.has(a.id)))
+            .map((w) => {
+              const online = onlineUserIds.has(w.id);
+              return (
             <div key={w.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                    {(w.display_name || "W").slice(0, 2).toUpperCase()}
+                  <div className="relative">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                      {(w.display_name || "W").slice(0, 2).toUpperCase()}
+                    </div>
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
+                        online ? "bg-eco-success" : "bg-muted-foreground/40"
+                      }`}
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">{w.display_name || "Worker"}</p>
                     <p className="text-xs text-muted-foreground">{w.email}</p>
                   </div>
                 </div>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    online ? "bg-eco-success/10 text-eco-success" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {online ? "Online" : "Offline"}
+                </span>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <div>
@@ -126,7 +145,8 @@ const SupervisorWorkersPage = () => {
                 Share Location
               </button>
             </div>
-          ))}
+              );
+            })}
         </div>
       )}
     </div>
