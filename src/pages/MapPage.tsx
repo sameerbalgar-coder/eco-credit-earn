@@ -17,10 +17,21 @@ const STATUS_FILTERS = [
   { id: "completed", label: "Completed", color: "#22c55e" },
 ];
 
+// Goa geographic bounds
+const GOA_BOUNDS: [[number, number], [number, number]] = [
+  [14.85, 73.65], // SW
+  [15.85, 74.35], // NE
+];
+const GOA_CENTER: [number, number] = [15.395, 73.998];
+
+const isInGoa = (lat: number, lng: number) =>
+  lat >= GOA_BOUNDS[0][0] && lat <= GOA_BOUNDS[1][0] &&
+  lng >= GOA_BOUNDS[0][1] && lng <= GOA_BOUNDS[1][1];
+
 const FlyToUser = ({ pos }: { pos: [number, number] | null }) => {
   const map = useMap();
   useEffect(() => {
-    if (pos) map.setView(pos, 14);
+    if (pos && isInGoa(pos[0], pos[1])) map.setView(pos, 15);
   }, [pos, map]);
   return null;
 };
