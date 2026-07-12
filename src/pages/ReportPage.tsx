@@ -57,13 +57,26 @@ const ReportPage = () => {
     }
   });
 
-  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
       const preview = URL.createObjectURL(file);
       setPhotos((p) => [...p, { file, preview }]);
-    });
+      try {
+        const meta = await exifr.parse(file, { gps: true, pick: ["DateTimeOriginal", "CreateDate", "latitude", "longitude"] });
+        if (meta?.latitude && meta?.longitude) {
+          setLocation({ lat: meta.latitude, lng: meta.longitude });
+          setAddress(`${meta.latitude.toFixed(4)}, ${meta.longitude.toFixed(4)} (from photo)`);
+          setExifSource(true);
+        }
+        const shotAt = meta?.DateTimeOriginal || meta?.CreateDate;
+        if (shotAt) setCapturedAt(new Date(shotAt));
+        else if (!capturedAt) setCapturedAt(new Date(file.lastModified || Date.now()));
+      } catch {
+        setCapturedAt((c) => c ?? new Date(file.lastModified || Date.now()));
+      }
+    }
   };
 
   const handleSubmit = async () => {
