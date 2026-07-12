@@ -136,7 +136,10 @@ const MapPage = () => {
       <div className="h-[60vh] overflow-hidden rounded-2xl border border-border">
         <MapContainer
           center={center}
-          zoom={userPos ? 14 : 5}
+          zoom={userInGoa ? 14 : 11}
+          minZoom={10}
+          maxBounds={GOA_BOUNDS}
+          maxBoundsViscosity={1.0}
           style={{ height: "100%", width: "100%" }}
           scrollWheelZoom
         >
