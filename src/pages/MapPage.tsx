@@ -103,9 +103,14 @@ const MapPage = () => {
   return (
     <div className="px-4 py-6 space-y-4">
       <div>
-        <h1 className="text-lg font-bold text-foreground">Live Waste Map</h1>
+        <h1 className="text-lg font-bold text-foreground">Live Waste Map · Goa</h1>
         <p className="text-sm text-muted-foreground">
-          Real-time issue tracking · {filtered.length} visible
+          {userPos
+            ? userInGoa
+              ? "Tracking your location in Goa"
+              : "You're outside Goa — showing state view"
+            : "Detecting your location..."}
+          {" · "}{filtered.length} visible
         </p>
       </div>
 
