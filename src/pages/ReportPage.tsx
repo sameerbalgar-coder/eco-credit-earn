@@ -223,9 +223,16 @@ const ReportPage = () => {
       </div>
       <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-3">
         <MapPin className="h-5 w-5 text-primary" />
-        <div>
-          <p className="text-sm font-medium text-foreground">Location</p>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-foreground">
+            Location {exifSource && <span className="text-[10px] text-primary">📷 from photo</span>}
+          </p>
           <p className="text-xs text-muted-foreground">{address}</p>
+          {capturedAt && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Captured: {capturedAt.toLocaleString()}
+            </p>
+          )}
         </div>
       </div>
     </div>,
