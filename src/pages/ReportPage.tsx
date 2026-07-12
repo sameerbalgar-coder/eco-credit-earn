@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import exifr from "exifr";
 
 const wasteCategories = [
   { id: "plastic", label: "Plastic", icon: "♻️" },
@@ -38,6 +39,8 @@ const ReportPage = () => {
   const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState("Detecting location...");
+  const [capturedAt, setCapturedAt] = useState<Date | null>(null);
+  const [exifSource, setExifSource] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,13 +57,26 @@ const ReportPage = () => {
     }
   });
 
-  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
       const preview = URL.createObjectURL(file);
       setPhotos((p) => [...p, { file, preview }]);
-    });
+      try {
+        const meta = await exifr.parse(file, { gps: true, pick: ["DateTimeOriginal", "CreateDate", "latitude", "longitude"] });
+        if (meta?.latitude && meta?.longitude) {
+          setLocation({ lat: meta.latitude, lng: meta.longitude });
+          setAddress(`${meta.latitude.toFixed(4)}, ${meta.longitude.toFixed(4)} (from photo)`);
+          setExifSource(true);
+        }
+        const shotAt = meta?.DateTimeOriginal || meta?.CreateDate;
+        if (shotAt) setCapturedAt(new Date(shotAt));
+        else if (!capturedAt) setCapturedAt(new Date(file.lastModified || Date.now()));
+      } catch {
+        setCapturedAt((c) => c ?? new Date(file.lastModified || Date.now()));
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -82,7 +98,7 @@ const ReportPage = () => {
       const { error } = await supabase.from("waste_reports").insert({
         reporter_id: user.id,
         waste_type: selectedCategory,
-        description,
+        description: [description, capturedAt ? `📷 Captured: ${capturedAt.toISOString()}` : null].filter(Boolean).join(" | "),
         quantity_kg: quantity ? parseFloat(quantity) : null,
         latitude: location?.lat ?? null,
         longitude: location?.lng ?? null,
@@ -207,9 +223,16 @@ const ReportPage = () => {
       </div>
       <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-3">
         <MapPin className="h-5 w-5 text-primary" />
-        <div>
-          <p className="text-sm font-medium text-foreground">Location</p>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-foreground">
+            Location {exifSource && <span className="text-[10px] text-primary">📷 from photo</span>}
+          </p>
           <p className="text-xs text-muted-foreground">{address}</p>
+          {capturedAt && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Captured: {capturedAt.toLocaleString()}
+            </p>
+          )}
         </div>
       </div>
     </div>,
