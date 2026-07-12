@@ -149,7 +149,7 @@ const MapPage = () => {
           />
           <FlyToUser pos={userPos} />
 
-          {userPos && (
+          {userPos && userInGoa && (
             <CircleMarker
               center={userPos}
               radius={8}
