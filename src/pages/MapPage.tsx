@@ -88,14 +88,17 @@ const MapPage = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    const withCoords = reports.filter((r) => r.latitude && r.longitude);
+    const withCoords = reports.filter(
+      (r) => r.latitude && r.longitude && isInGoa(Number(r.latitude), Number(r.longitude))
+    );
     if (filter === "all") return withCoords;
     if (filter === "in_progress")
       return withCoords.filter((r) => r.status === "in_progress" || r.status === "assigned");
     return withCoords.filter((r) => r.status === filter);
   }, [reports, filter]);
 
-  const center: [number, number] = userPos ?? [20.5937, 78.9629]; // India fallback
+  const userInGoa = userPos ? isInGoa(userPos[0], userPos[1]) : false;
+  const center: [number, number] = userInGoa && userPos ? userPos : GOA_CENTER;
 
   return (
     <div className="px-4 py-6 space-y-4">
