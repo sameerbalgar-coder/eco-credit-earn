@@ -39,6 +39,8 @@ const ReportPage = () => {
   const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState("Detecting location...");
+  const [capturedAt, setCapturedAt] = useState<Date | null>(null);
+  const [exifSource, setExifSource] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
