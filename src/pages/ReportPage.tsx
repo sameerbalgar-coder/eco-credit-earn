@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import exifr from "exifr";
 
 const wasteCategories = [
   { id: "plastic", label: "Plastic", icon: "♻️" },
