@@ -17,10 +17,21 @@ const STATUS_FILTERS = [
   { id: "completed", label: "Completed", color: "#22c55e" },
 ];
 
+// Goa geographic bounds
+const GOA_BOUNDS: [[number, number], [number, number]] = [
+  [14.85, 73.65], // SW
+  [15.85, 74.35], // NE
+];
+const GOA_CENTER: [number, number] = [15.395, 73.998];
+
+const isInGoa = (lat: number, lng: number) =>
+  lat >= GOA_BOUNDS[0][0] && lat <= GOA_BOUNDS[1][0] &&
+  lng >= GOA_BOUNDS[0][1] && lng <= GOA_BOUNDS[1][1];
+
 const FlyToUser = ({ pos }: { pos: [number, number] | null }) => {
   const map = useMap();
   useEffect(() => {
-    if (pos) map.setView(pos, 14);
+    if (pos && isInGoa(pos[0], pos[1])) map.setView(pos, 15);
   }, [pos, map]);
   return null;
 };
@@ -77,21 +88,29 @@ const MapPage = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    const withCoords = reports.filter((r) => r.latitude && r.longitude);
+    const withCoords = reports.filter(
+      (r) => r.latitude && r.longitude && isInGoa(Number(r.latitude), Number(r.longitude))
+    );
     if (filter === "all") return withCoords;
     if (filter === "in_progress")
       return withCoords.filter((r) => r.status === "in_progress" || r.status === "assigned");
     return withCoords.filter((r) => r.status === filter);
   }, [reports, filter]);
 
-  const center: [number, number] = userPos ?? [20.5937, 78.9629]; // India fallback
+  const userInGoa = userPos ? isInGoa(userPos[0], userPos[1]) : false;
+  const center: [number, number] = userInGoa && userPos ? userPos : GOA_CENTER;
 
   return (
     <div className="px-4 py-6 space-y-4">
       <div>
-        <h1 className="text-lg font-bold text-foreground">Live Waste Map</h1>
+        <h1 className="text-lg font-bold text-foreground">Live Waste Map · Goa</h1>
         <p className="text-sm text-muted-foreground">
-          Real-time issue tracking · {filtered.length} visible
+          {userPos
+            ? userInGoa
+              ? "Tracking your location in Goa"
+              : "You're outside Goa — showing state view"
+            : "Detecting your location..."}
+          {" · "}{filtered.length} visible
         </p>
       </div>
 
@@ -117,7 +136,10 @@ const MapPage = () => {
       <div className="h-[60vh] overflow-hidden rounded-2xl border border-border">
         <MapContainer
           center={center}
-          zoom={userPos ? 14 : 5}
+          zoom={userInGoa ? 14 : 11}
+          minZoom={10}
+          maxBounds={GOA_BOUNDS}
+          maxBoundsViscosity={1.0}
           style={{ height: "100%", width: "100%" }}
           scrollWheelZoom
         >
@@ -127,7 +149,7 @@ const MapPage = () => {
           />
           <FlyToUser pos={userPos} />
 
-          {userPos && (
+          {userPos && userInGoa && (
             <CircleMarker
               center={userPos}
               radius={8}
