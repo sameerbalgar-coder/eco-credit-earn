@@ -15,6 +15,14 @@ const SupervisorWorkersPage = () => {
 
   useEffect(() => {
     fetchWorkers();
+    const channel = supabase
+      .channel("workers-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchWorkers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchWorkers())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchWorkers = async () => {

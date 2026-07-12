@@ -104,27 +104,30 @@ const SupervisorAssignPage = () => {
     }
   };
 
+  const loadWorkers = async () => {
+    const { data } = await supabase.from("user_roles").select("user_id").eq("role", "worker");
+    if (data && data.length > 0) {
+      const ids = data.map((r) => r.user_id);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", ids);
+      if (profs) setWorkers(profs);
+    } else {
+      setWorkers([]);
+    }
+  };
+
   useEffect(() => {
     refetch();
-    supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "worker")
-      .then(async ({ data }) => {
-        if (data && data.length > 0) {
-          const ids = data.map((r) => r.user_id);
-          const { data: profs } = await supabase
-            .from("profiles")
-            .select("id, display_name, email")
-            .in("id", ids);
-          if (profs) setWorkers(profs);
-        }
-      });
+    loadWorkers();
 
     const ch = supabase
       .channel("supervisor_board")
       .on("postgres_changes", { event: "*", schema: "public", table: "waste_reports" }, () => refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => refetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => loadWorkers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => loadWorkers())
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
