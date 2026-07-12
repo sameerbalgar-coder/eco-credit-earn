@@ -98,7 +98,7 @@ const ReportPage = () => {
       const { error } = await supabase.from("waste_reports").insert({
         reporter_id: user.id,
         waste_type: selectedCategory,
-        description,
+        description: [description, capturedAt ? `📷 Captured: ${capturedAt.toISOString()}` : null].filter(Boolean).join(" | "),
         quantity_kg: quantity ? parseFloat(quantity) : null,
         latitude: location?.lat ?? null,
         longitude: location?.lng ?? null,
