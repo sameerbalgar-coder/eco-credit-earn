@@ -186,6 +186,14 @@ const SupervisorAssignPage = () => {
         type: "task",
       });
 
+      // Also alert other workers in the area so they know activity is happening nearby
+      await supabase.rpc("notify_role" as any, {
+        _role: "worker",
+        _title: "New task in your area",
+        _message: `A ${assignFor.waste_type} cleanup was assigned${assignFor.address ? ` near ${assignFor.address}` : ""}.`,
+        _type: "task",
+      });
+
       toast({ title: "Task assigned!", description: "Worker has been notified." });
       setAssignFor(null);
       setSelectedWorker(null);
