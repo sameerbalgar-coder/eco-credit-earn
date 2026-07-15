@@ -131,6 +131,15 @@ const PublicFeedPage = () => {
       setPosts(prev => [data, ...prev]);
       setContent("");
       pickFile(null);
+
+      // Alert supervisors about the new community post
+      await supabase.rpc("notify_role" as any, {
+        _role: "supervisor",
+        _title: "New community post",
+        _message: `${profile?.display_name ?? "A citizen"} posted on the community feed.`,
+        _type: "community",
+      });
+
       toast({ title: "Posted! 🎉", description: "Your post is now on the community feed." });
     } catch (e: any) {
       toast({ title: "Couldn't post", description: e.message, variant: "destructive" });
