@@ -107,6 +107,15 @@ const ReportPage = () => {
       } as any);
 
       if (error) throw error;
+
+      // Alert supervisors of the new report
+      await supabase.rpc("notify_role" as any, {
+        _role: "supervisor",
+        _title: "New citizen report",
+        _message: `${selectedCategory} reported${address ? ` near ${address}` : ""}.`,
+        _type: "report",
+      });
+
       setSubmitted(true);
       setTimeout(() => navigate("/"), 2000);
     } catch (err: any) {
