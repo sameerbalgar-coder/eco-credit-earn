@@ -6,7 +6,7 @@ import ecoLogo from "@/assets/ecocredit-logo.png";
 import StatCard from "@/components/StatCard";
 import {
   Shield, ClipboardCheck, Users, MapPin, BarChart3, Bell, ChevronRight,
-  CheckCircle, Clock, AlertTriangle, Coins, Loader2,
+  CheckCircle, Clock, AlertTriangle, Coins, Loader2, Flame, MessageSquare, UserCheck, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -92,8 +92,13 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-2 gap-3">
           {[
             { icon: Shield, label: "Verify Reports", desc: "Review pending", to: "/admin/verify" },
+            { icon: UserCheck, label: "Assign Tasks", desc: "Reports board", to: "/supervisor/assign" },
+            { icon: Users, label: "Workers", desc: "Online team", to: "/supervisor/workers" },
+            { icon: Flame, label: "Hotspots", desc: "Report density", to: "/supervisor/hotspots" },
+            { icon: MessageSquare, label: "Community", desc: "Moderate feed", to: "/supervisor/community" },
             { icon: MapPin, label: "Zone Manager", desc: "Areas & staff", to: "/admin/zones" },
             { icon: Coins, label: "Credit Control", desc: "Approve & audit", to: "/admin/credits" },
+            { icon: Gift, label: "Credit Exchange", desc: "Add/remove offers", to: "/admin/offers" },
             { icon: BarChart3, label: "Analytics", desc: "Reports & trends", to: "/admin/analytics" },
           ].map(item => (
             <button

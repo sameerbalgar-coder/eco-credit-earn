@@ -26,6 +26,7 @@ import AdminVerifyPage from "./pages/AdminVerifyPage";
 import AdminZonesPage from "./pages/AdminZonesPage";
 import ZoneStaffPage from "./pages/ZoneStaffPage";
 import AdminCreditsPage from "./pages/AdminCreditsPage";
+import AdminOffersPage from "./pages/AdminOffersPage";
 import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import ReportHistoryPage from "./pages/ReportHistoryPage";
 import CommunityPage from "./pages/CommunityPage";
@@ -102,6 +103,7 @@ const App = () => (
                       <Route path="/admin/zones" element={<AdminZonesPage />} />
                       <Route path="/admin/zones/:zoneId/staff" element={<ZoneStaffPage />} />
                       <Route path="/admin/credits" element={<AdminCreditsPage />} />
+                      <Route path="/admin/offers" element={<AdminOffersPage />} />
                       <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
