@@ -6,7 +6,7 @@ import ecoLogo from "@/assets/ecocredit-logo.png";
 import StatCard from "@/components/StatCard";
 import {
   Shield, ClipboardCheck, Users, MapPin, BarChart3, Bell, ChevronRight,
-  CheckCircle, Clock, AlertTriangle, Coins, Loader2,
+  CheckCircle, Clock, AlertTriangle, Coins, Loader2, Flame, MessageSquare, UserCheck, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
