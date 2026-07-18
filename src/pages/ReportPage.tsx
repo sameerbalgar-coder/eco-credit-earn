@@ -7,6 +7,8 @@ import {
   Upload,
   CheckCircle2,
   Image,
+  Map as MapIcon,
+  Crosshair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +17,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import exifr from "exifr";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+const pinIcon = L.divIcon({
+  className: "",
+  html: '<div style="background:#16a34a;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 2px #16a34a"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+const LocationPicker = ({
+  value,
+  onChange,
+}: {
+  value: { lat: number; lng: number } | null;
+  onChange: (v: { lat: number; lng: number }) => void;
+}) => {
+  useMapEvents({
+    click(e) {
+      onChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  return value ? <Marker position={[value.lat, value.lng]} icon={pinIcon} /> : null;
+};
+
+const Recenter = ({ pos }: { pos: { lat: number; lng: number } | null }) => {
+  const map = useMap();
+  if (pos) map.setView([pos.lat, pos.lng], Math.max(map.getZoom(), 14));
+  return null;
+};
 
 const wasteCategories = [
   { id: "plastic", label: "Plastic", icon: "♻️" },
@@ -43,6 +76,21 @@ const ReportPage = () => {
   const [exifSource, setExifSource] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [manualAddress, setManualAddress] = useState("");
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) return;
+    setAddress("Detecting location...");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setAddress(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        setExifSource(false);
+      },
+      () => setAddress("Location unavailable — enter manually")
+    );
+  };
 
   // Auto-detect location
   useState(() => {
@@ -230,17 +278,79 @@ const ReportPage = () => {
           className="rounded-xl"
         />
       </div>
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-3">
-        <MapPin className="h-5 w-5 text-primary" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground">
-            Location {exifSource && <span className="text-[10px] text-primary">📷 from photo</span>}
-          </p>
-          <p className="text-xs text-muted-foreground">{address}</p>
-          {capturedAt && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              Captured: {capturedAt.toLocaleString()}
+      <div className="space-y-2 rounded-xl border border-border bg-muted/50 p-3">
+        <div className="flex items-start gap-2">
+          <MapPin className="h-5 w-5 text-primary mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Location {exifSource && <span className="text-[10px] text-primary">📷 from photo</span>}
             </p>
+            <p className="text-xs text-muted-foreground break-all">{address}</p>
+            {capturedAt && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Captured: {capturedAt.toLocaleString()}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2 pt-1">
+          <label className="text-xs font-medium text-foreground">Type address (optional)</label>
+          <Input
+            placeholder="e.g. Near Miramar beach, Panaji"
+            value={manualAddress}
+            onChange={(e) => {
+              setManualAddress(e.target.value);
+              if (e.target.value.trim()) {
+                setAddress(e.target.value);
+                setExifSource(false);
+              }
+            }}
+            className="rounded-xl bg-background"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
+            >
+              <Crosshair className="h-3.5 w-3.5" /> Use my location
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMapPicker((v) => !v)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
+            >
+              <MapIcon className="h-3.5 w-3.5" /> {showMapPicker ? "Hide map" : "Pick on map"}
+            </button>
+          </div>
+
+          {showMapPicker && (
+            <div className="h-56 overflow-hidden rounded-xl border border-border">
+              <MapContainer
+                center={[location?.lat ?? 15.395, location?.lng ?? 73.998]}
+                zoom={location ? 15 : 11}
+                style={{ height: "100%", width: "100%" }}
+                scrollWheelZoom
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Recenter pos={location} />
+                <LocationPicker
+                  value={location}
+                  onChange={(v) => {
+                    setLocation(v);
+                    setExifSource(false);
+                    if (!manualAddress.trim()) {
+                      setAddress(`${v.lat.toFixed(4)}, ${v.lng.toFixed(4)}`);
+                    }
+                  }}
+                />
+              </MapContainer>
+              <p className="mt-1 text-[10px] text-muted-foreground text-center">Tap map to drop pin</p>
+            </div>
           )}
         </div>
       </div>
