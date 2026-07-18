@@ -26,6 +26,7 @@ import AdminVerifyPage from "./pages/AdminVerifyPage";
 import AdminZonesPage from "./pages/AdminZonesPage";
 import ZoneStaffPage from "./pages/ZoneStaffPage";
 import AdminCreditsPage from "./pages/AdminCreditsPage";
+import AdminOffersPage from "./pages/AdminOffersPage";
 import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import ReportHistoryPage from "./pages/ReportHistoryPage";
 import CommunityPage from "./pages/CommunityPage";
