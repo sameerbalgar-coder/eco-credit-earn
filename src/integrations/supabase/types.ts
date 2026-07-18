@@ -299,6 +299,48 @@ export type Database = {
           },
         ]
       }
+      rewards: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          credit_cost: number
+          description: string | null
+          id: string
+          image_url: string | null
+          reward_type: string
+          stock: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          credit_cost?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          reward_type?: string
+          stock?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          credit_cost?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          reward_type?: string
+          stock?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           after_photo_url: string | null
