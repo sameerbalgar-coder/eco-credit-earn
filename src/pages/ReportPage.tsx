@@ -76,6 +76,21 @@ const ReportPage = () => {
   const [exifSource, setExifSource] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [manualAddress, setManualAddress] = useState("");
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) return;
+    setAddress("Detecting location...");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setAddress(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+        setExifSource(false);
+      },
+      () => setAddress("Location unavailable — enter manually")
+    );
+  };
 
   // Auto-detect location
   useState(() => {
