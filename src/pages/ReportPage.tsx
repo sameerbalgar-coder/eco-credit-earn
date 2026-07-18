@@ -7,6 +7,8 @@ import {
   Upload,
   CheckCircle2,
   Image,
+  Map as MapIcon,
+  Crosshair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +17,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import exifr from "exifr";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+const pinIcon = L.divIcon({
+  className: "",
+  html: '<div style="background:#16a34a;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 2px #16a34a"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+const LocationPicker = ({
+  value,
+  onChange,
+}: {
+  value: { lat: number; lng: number } | null;
+  onChange: (v: { lat: number; lng: number }) => void;
+}) => {
+  useMapEvents({
+    click(e) {
+      onChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  return value ? <Marker position={[value.lat, value.lng]} icon={pinIcon} /> : null;
+};
+
+const Recenter = ({ pos }: { pos: { lat: number; lng: number } | null }) => {
+  const map = useMap();
+  if (pos) map.setView([pos.lat, pos.lng], Math.max(map.getZoom(), 14));
+  return null;
+};
 
 const wasteCategories = [
   { id: "plastic", label: "Plastic", icon: "♻️" },
