@@ -1,42 +1,40 @@
-## Goal
-Give supervisors a clear pipeline: see citizen reports → assign to a worker → see who's on it → view proof once done.
+# On-Demand Pickup for Citizens
 
-## Changes
+Citizens can request a doorstep waste pickup, choose a date and time slot, and have it routed to a recycling partner. All requests are tracked on a new Pickups page.
 
-### 1. Upgrade `SupervisorAssignPage` into a full Reports Board
-Split into 3 tabs (or stacked sections): **Pending**, **In Progress**, **Completed**.
+## What the citizen does
 
-- **Pending** — waste reports with status `pending` (unassigned). Tap a report → opens a bottom sheet with report details (photo, waste type, address, reporter name, time) and a worker picker. Assign creates the task + notifies worker (existing logic).
-- **In Progress** — reports with status `assigned` / `in_progress`. Each card shows:
-  - Report info (waste type, address, thumbnail)
-  - Assigned worker name + avatar
-  - Task status badge (assigned / started / in progress)
-  - "Reassign" button (optional secondary action)
-- **Completed** — reports with status `completed`. Each card shows:
-  - Worker name
-  - "View Proof" button → opens a modal with **before photo**, **after photo**, completion notes, weight collected, completed timestamp, GPS pin link.
+1. Opens **Pickups** from the home Quick Actions (and a bottom-nav/route entry at `/pickups`).
+2. Fills a short request form:
+   - Waste type (same categories as reporting: plastic, organic, e-waste, metal, glass, paper, hazardous, mixed)
+   - Preferred date (today or later) and time slot: Morning 8-12, Afternoon 12-4, Evening 4-8
+   - Contact phone number (10-digit, validated)
+   - Pickup address, with "Use my location" GPS and "Pick on map" (same Leaflet picker as the report form)
+   - Optional estimated weight and notes
+   - Optional photo
+3. Chooses a recycling partner: the form suggests partners from the existing recycling directory (household/business, nearest first when GPS is available); the citizen can also leave it as "Any available partner".
+4. Submits and sees a confirmation with a short request ID.
 
-### 2. New `SupervisorReportDetail` modal/route
-Reusable detail view showing full report + associated task info. Used from both the "In Progress" and "Completed" tabs. Photo lightbox on tap (same pattern as feed).
+## Tracking
 
-### 3. `SupervisorDashboard` tweaks
-- Pending Reports cards now show assigned worker name when status is `assigned`.
-- Add a 4th quick stat: **Awaiting Verification** (completed but not yet verified by admin).
+The Pickups page has two sections:
+- **Upcoming** — requested / confirmed / on the way
+- **History** — completed and cancelled
 
-### 4. Data fetching
-Single query joining `waste_reports` with `tasks` and `profiles` (via `worker_id`) so we get worker `display_name` in one round-trip. Realtime subscription on `tasks` so status flips (assigned → completed) update the board live.
+Each card shows waste type, date + slot, address, assigned partner with tap-to-call and email links, and a colored status chip (Requested = amber, Confirmed = blue, Completed = green, Cancelled = gray). Citizens can cancel a request while it is still Requested or Confirmed. Status changes stream in live.
 
-### Extra suggestions (say yes/no)
-- **Priority flag** on reports (low/medium/high) so supervisor can triage.
-- **Bulk assign** — pick multiple pending reports, assign to one worker.
-- **Verify & release credits** button on the Completed card, so the supervisor approves proof before credits are paid out to the worker (currently that seems to sit with admin).
-- **Chat / note thread** per task between supervisor and worker.
-- **Filter by zone** so supervisors only see reports in their assigned zone.
+## Routing to partners
 
-## Files touched
-- `src/pages/SupervisorAssignPage.tsx` — rebuild as tabbed board
-- `src/pages/SupervisorDashboard.tsx` — show assigned worker names, add stat
-- `src/pages/SupervisorReportDetail.tsx` — new proof-viewer modal/page
-- `src/App.tsx` — route for the new detail page (if standalone)
+- On submit, the request is stored with the selected partner (or none).
+- Supervisors and admins can see all pickup requests, set the partner, and move the status forward; supervisors get a notification for each new request so nothing sits unhandled. This uses the existing notification mechanism.
+- The partner's phone/email from the recycling directory is shown to the citizen so they can contact them directly.
 
-No schema changes needed — `tasks.before_photo_url`, `after_photo_url`, `completion_notes`, `weight_kg`, `completed_at` already exist.
+## Technical notes
+
+- New table `public.pickup_requests`: `user_id`, `waste_type`, `preferred_date` (date), `time_slot` (text: morning/afternoon/evening), `contact_phone`, `address`, `latitude`, `longitude`, `quantity_kg`, `notes`, `photo_url`, `contact_id` (FK to `recycling_contacts`), `status` (enum: requested, confirmed, on_the_way, completed, cancelled), plus `created_at`/`updated_at` with the existing `update_updated_at` trigger.
+- Grants: `SELECT, INSERT, UPDATE` to `authenticated`, `ALL` to `service_role`. RLS: citizens read/insert/update their own rows; supervisors and admins read and update all rows (via `has_role`).
+- Realtime enabled on the table; the Pickups page subscribes to changes for the signed-in user.
+- Photos reuse the existing public `report-photos` bucket under a `pickups/` prefix.
+- Client validation with zod: phone `^[0-9]{10}$`, date not in the past, address max 200 chars, notes max 500 chars, weight positive.
+- New files: `src/pages/PickupsPage.tsx` (list + form, mobile-first, existing card/earthy style), route `/pickups` in `App.tsx`, Quick Action tile on `Index.tsx`, and a supervisor-side pickup list added to the supervisor dashboard actions.
+- Notifications on new request go to supervisors via the existing `notify_role` function.
