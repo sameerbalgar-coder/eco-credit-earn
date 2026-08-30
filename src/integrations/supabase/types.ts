@@ -186,6 +186,71 @@ export type Database = {
         }
         Relationships: []
       }
+      pickup_requests: {
+        Row: {
+          address: string | null
+          contact_id: string | null
+          contact_phone: string
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          photo_url: string | null
+          preferred_date: string
+          quantity_kg: number | null
+          status: Database["public"]["Enums"]["pickup_status"]
+          time_slot: string
+          updated_at: string
+          user_id: string
+          waste_type: string
+        }
+        Insert: {
+          address?: string | null
+          contact_id?: string | null
+          contact_phone: string
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          photo_url?: string | null
+          preferred_date: string
+          quantity_kg?: number | null
+          status?: Database["public"]["Enums"]["pickup_status"]
+          time_slot?: string
+          updated_at?: string
+          user_id: string
+          waste_type: string
+        }
+        Update: {
+          address?: string | null
+          contact_id?: string | null
+          contact_phone?: string
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          photo_url?: string | null
+          preferred_date?: string
+          quantity_kg?: number | null
+          status?: Database["public"]["Enums"]["pickup_status"]
+          time_slot?: string
+          updated_at?: string
+          user_id?: string
+          waste_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_requests_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "recycling_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -592,6 +657,12 @@ export type Database = {
     }
     Enums: {
       app_role: "citizen" | "worker" | "supervisor" | "admin"
+      pickup_status:
+        | "requested"
+        | "confirmed"
+        | "on_the_way"
+        | "completed"
+        | "cancelled"
       report_status:
         | "pending"
         | "assigned"
@@ -727,6 +798,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["citizen", "worker", "supervisor", "admin"],
+      pickup_status: [
+        "requested",
+        "confirmed",
+        "on_the_way",
+        "completed",
+        "cancelled",
+      ],
       report_status: [
         "pending",
         "assigned",
