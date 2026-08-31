@@ -31,6 +31,8 @@ import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import ReportHistoryPage from "./pages/ReportHistoryPage";
 import CommunityPage from "./pages/CommunityPage";
 import RecyclingPage from "./pages/RecyclingPage";
+import PickupsPage from "./pages/PickupsPage";
+import StaffPickupsPage from "./pages/StaffPickupsPage";
 import PublicFeedPage from "./pages/PublicFeedPage";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerTaskDetail from "./pages/WorkerTaskDetail";
