@@ -95,6 +95,9 @@ const App = () => (
                       <Route path="/feed" element={<PublicFeedPage />} />
                       <Route path="/community" element={<CommunityPage />} />
                       <Route path="/recycling" element={<RecyclingPage />} />
+                      <Route path="/pickups" element={<PickupsPage />} />
+                      <Route path="/staff/pickups" element={<StaffPickupsPage />} />
+
                       <Route path="/worker/task/:taskId" element={<WorkerTaskDetail />} />
                       <Route path="/worker/history" element={<WorkerHistoryPage />} />
                       <Route path="/supervisor/assign" element={<SupervisorAssignPage />} />
