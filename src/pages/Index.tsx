@@ -16,6 +16,8 @@ import {
   BookOpen,
   Users,
   ClipboardList,
+  Truck,
+
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -125,11 +127,15 @@ const Index = () => {
           <QuickAction icon={MapPin} label="Map" to="/map" />
         </div>
         <div className="grid grid-cols-4 gap-3 mt-3">
+          <QuickAction icon={Truck} label="Pickup" to="/pickups" />
           <QuickAction icon={BookOpen} label="Materials" to="/materials" />
           <QuickAction icon={Bell} label="Alerts" to="/notifications" />
           <QuickAction icon={Users} label="Events" to="/community" />
+        </div>
+        <div className="grid grid-cols-4 gap-3 mt-3">
           <QuickAction icon={ClipboardList} label="My Reports" to="/reports" />
         </div>
+
       </div>
 
       {/* Recent Activity */}
