@@ -18,6 +18,7 @@ import {
   Send,
   Flame,
   MessageSquare,
+  Truck,
 } from "lucide-react";
 
 const SupervisorDashboard = () => {
