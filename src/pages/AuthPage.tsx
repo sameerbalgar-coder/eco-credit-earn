@@ -254,41 +254,86 @@ const AuthPage = () => {
           )}
 
           {(isLogin || isSignup) && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitting}
-              onClick={async () => {
-                setSubmitting(true);
-                try {
-                  const guestId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-                  const guestEmail = `guest-${guestId.slice(0, 8)}@demo.local`;
-                  const guestPassword = "demo1234";
-                  const { data } = await signUp(guestEmail, guestPassword, `Guest ${roleLabels[selectedRole]}`, selectedRole);
-                  const guestDesc = `Temporary ${roleLabels[selectedRole]} access.`;
-                  if (data?.session) {
-                    toast({ title: "Welcome, Guest!", description: guestDesc });
-                    navigate("/");
-                  } else {
-                    const { error: signInError } = await signIn(guestEmail, guestPassword);
-                    if (!signInError) {
+            <div className="space-y-2">
+              <p className="text-center text-[11px] text-muted-foreground">
+                Quick temporary access — no details needed
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {roles.map((r) => (
+                  <Button
+                    key={r.id}
+                    type="button"
+                    variant="outline"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      try {
+                        const demoEmail = `demo.${r.id}@demo.local`;
+                        const demoPassword = "demo1234";
+                        const { data } = await signUp(demoEmail, demoPassword, `Demo ${roleLabels[r.id]}`, r.id);
+                        const desc = `Temporary ${roleLabels[r.id]} access.`;
+                        if (data?.session) {
+                          toast({ title: "Welcome!", description: desc });
+                          navigate("/");
+                        } else {
+                          const { error: signInError } = await signIn(demoEmail, demoPassword);
+                          if (!signInError) {
+                            toast({ title: "Welcome!", description: desc });
+                            navigate("/");
+                          } else {
+                            toast({ title: "Quick login failed", description: signInError.message, variant: "destructive" });
+                          }
+                        }
+                      } catch (e: any) {
+                        toast({ title: "Quick login failed", description: e?.message ?? "Something went wrong.", variant: "destructive" });
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    className="flex h-auto items-center justify-start gap-2 rounded-xl px-3 py-3 text-left"
+                  >
+                    <r.icon className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="text-xs font-medium">{r.label}</span>
+                  </Button>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={submitting}
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    const guestId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+                    const guestEmail = `guest-${guestId.slice(0, 8)}@demo.local`;
+                    const guestPassword = "demo1234";
+                    const { data } = await signUp(guestEmail, guestPassword, `Guest ${roleLabels[selectedRole]}`, selectedRole);
+                    const guestDesc = `Temporary ${roleLabels[selectedRole]} access.`;
+                    if (data?.session) {
                       toast({ title: "Welcome, Guest!", description: guestDesc });
                       navigate("/");
                     } else {
-                      toast({ title: "Guest login failed", description: signInError.message, variant: "destructive" });
+                      const { error: signInError } = await signIn(guestEmail, guestPassword);
+                      if (!signInError) {
+                        toast({ title: "Welcome, Guest!", description: guestDesc });
+                        navigate("/");
+                      } else {
+                        toast({ title: "Guest login failed", description: signInError.message, variant: "destructive" });
+                      }
                     }
+                  } catch (e: any) {
+                    toast({ title: "Guest login failed", description: e?.message ?? "Something went wrong.", variant: "destructive" });
+                  } finally {
+                    setSubmitting(false);
                   }
-                } catch (e: any) {
-                  toast({ title: "Guest login failed", description: e?.message ?? "Something went wrong.", variant: "destructive" });
-                } finally {
-                  setSubmitting(false);
-                }
-              }}
-              className="w-full rounded-xl py-5 text-sm font-semibold"
-            >
-              Continue as Guest
-            </Button>
+                }}
+                className="w-full rounded-xl py-4 text-xs font-medium"
+              >
+                Continue as Guest ({roleLabels[selectedRole]})
+              </Button>
+            </div>
           )}
+
 
           {isForgot && (
             <button
