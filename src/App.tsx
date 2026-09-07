@@ -83,13 +83,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
+            <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
             <Route
               path="/*"
               element={
                 <ProtectedRoute>
                   <AppLayout>
+                    <PageTransition>
                     <Routes>
                       <Route path="/" element={<RoleBasedHome />} />
                       <Route path="/report" element={<ReportPage />} />
@@ -121,6 +122,7 @@ const App = () => (
                       <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    </PageTransition>
                   </AppLayout>
                 </ProtectedRoute>
               }
