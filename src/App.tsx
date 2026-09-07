@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "./components/AppLayout";
 import Index from "./pages/Index";
@@ -57,6 +57,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const PageTransition = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="page-enter">
+      {children}
+    </div>
+  );
+};
+
 const RoleBasedHome = () => {
   const { profile } = useAuth();
   const role = profile?.role;
@@ -74,13 +83,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
+            <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
             <Route
               path="/*"
               element={
                 <ProtectedRoute>
                   <AppLayout>
+                    <PageTransition>
                     <Routes>
                       <Route path="/" element={<RoleBasedHome />} />
                       <Route path="/report" element={<ReportPage />} />
@@ -112,6 +122,7 @@ const App = () => (
                       <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    </PageTransition>
                   </AppLayout>
                 </ProtectedRoute>
               }
