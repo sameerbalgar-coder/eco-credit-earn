@@ -115,12 +115,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      applySession(session);
-      if (session?.user) {
-        void fetchProfile(session.user.id);
-      }
-    });
+    // Always start at the login page: clear any stored session on fresh app load,
+    // except when arriving via a password-recovery link (needs its session).
+    const isRecovery = window.location.hash.includes("type=recovery");
+    if (!isRecovery) {
+      supabase.auth.signOut().finally(() => {
+        applySession(null);
+      });
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        applySession(session);
+        if (session?.user) {
+          void fetchProfile(session.user.id);
+        }
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
