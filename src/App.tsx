@@ -114,6 +114,7 @@ const App = () => (
                       <Route path="/supervisor/workers" element={<SupervisorWorkersPage />} />
                       <Route path="/supervisor/community" element={<SupervisorCommunityPage />} />
                       <Route path="/supervisor/hotspots" element={<SupervisorHotspotsPage />} />
+                      <Route path="/admin/hotspots" element={<SupervisorHotspotsPage />} />
                       <Route path="/admin/verify" element={<AdminVerifyPage />} />
                       <Route path="/admin/zones" element={<AdminZonesPage />} />
                       <Route path="/admin/zones/:zoneId/staff" element={<ZoneStaffPage />} />
