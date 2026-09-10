@@ -64,7 +64,8 @@ const SupervisorAssignPage = () => {
   const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("pending");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [searchParams] = useSearchParams();
+  const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") ?? "all");
   const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { display_name: string | null; email: string | null }>>({});
