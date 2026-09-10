@@ -174,18 +174,28 @@ const ReportPage = () => {
 
       if (error) throw error;
 
-      // Alert supervisors of the new report
-      await supabase.rpc("notify_role" as any, {
-        _role: "supervisor",
-        _title: "New citizen report",
-        _message: `${selectedCategory} reported${address ? ` near ${address}` : ""}.`,
-        _type: "report",
-      });
+      // Alert supervisors of the new report (non-blocking)
+      try {
+        await supabase.rpc("notify_role" as any, {
+          _role: "supervisor",
+          _title: "New citizen report",
+          _message: `${selectedCategory} reported${address ? ` near ${address}` : ""}.`,
+          _type: "report",
+        });
+      } catch {
+        /* notification failure must not block the report */
+      }
 
       setSubmitted(true);
       setTimeout(() => navigate("/"), 2000);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Could not submit report",
+        description: err?.message ?? "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
+
     } finally {
       setSubmitting(false);
     }
