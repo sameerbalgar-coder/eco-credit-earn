@@ -194,8 +194,6 @@ const ReportPage = () => {
         description: err?.message ?? "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    }
-
     } finally {
       setSubmitting(false);
     }
