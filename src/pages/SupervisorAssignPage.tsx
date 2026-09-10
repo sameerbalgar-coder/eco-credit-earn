@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -64,7 +64,8 @@ const SupervisorAssignPage = () => {
   const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("pending");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [searchParams] = useSearchParams();
+  const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") ?? "all");
   const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { display_name: string | null; email: string | null }>>({});
