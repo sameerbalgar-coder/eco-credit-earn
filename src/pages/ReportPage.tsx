@@ -128,19 +128,37 @@ const ReportPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user || !selectedCategory) return;
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "Your session expired. Sign in again and resubmit.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+    if (!selectedCategory) {
+      toast({
+        title: "Choose a waste type",
+        description: "Go back a step and pick a category before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       // Upload photos to storage
       const photoUrls: string[] = [];
       for (const photo of photos) {
         const fileName = `${user.id}/${Date.now()}-${photo.file.name}`;
-        const { data } = await supabase.storage.from("report-photos").upload(fileName, photo.file);
+        const { data, error: upErr } = await supabase.storage.from("report-photos").upload(fileName, photo.file);
+        if (upErr) throw upErr;
         if (data) {
           const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(data.path);
           photoUrls.push(urlData.publicUrl);
         }
       }
+
 
       // Create waste report
       const { error } = await supabase.from("waste_reports").insert({
@@ -156,18 +174,26 @@ const ReportPage = () => {
 
       if (error) throw error;
 
-      // Alert supervisors of the new report
-      await supabase.rpc("notify_role" as any, {
-        _role: "supervisor",
-        _title: "New citizen report",
-        _message: `${selectedCategory} reported${address ? ` near ${address}` : ""}.`,
-        _type: "report",
-      });
+      // Alert supervisors of the new report (non-blocking)
+      try {
+        await supabase.rpc("notify_role" as any, {
+          _role: "supervisor",
+          _title: "New citizen report",
+          _message: `${selectedCategory} reported${address ? ` near ${address}` : ""}.`,
+          _type: "report",
+        });
+      } catch {
+        /* notification failure must not block the report */
+      }
 
       setSubmitted(true);
       setTimeout(() => navigate("/"), 2000);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Could not submit report",
+        description: err?.message ?? "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
