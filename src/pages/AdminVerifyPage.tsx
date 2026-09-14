@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, ThumbsUp, Loader2, MapPin } from "lucide-react";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const AdminVerifyPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [reports, setReports] = useState<any[]>([]);
@@ -16,12 +17,38 @@ const AdminVerifyPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("waste_reports")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .then(async ({ data }) => {
+    const hazardOnly = searchParams.get("type") === "hazardous";
+    const loadReports = async () => {
+      let citizenIds: string[] = [];
+
+      if (hazardOnly) {
+        const { data: citizens } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .eq("role", "citizen");
+
+        citizenIds = (citizens ?? [])
+          .filter((citizen) => !citizen.email?.toLowerCase().endsWith("@demo.local"))
+          .map((citizen) => citizen.id);
+
+        if (citizenIds.length === 0) {
+          setReports([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      let query = supabase
+        .from("waste_reports")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (hazardOnly) {
+        query = query.eq("waste_type", "hazardous").in("reporter_id", citizenIds);
+      }
+
+      const { data } = await query;
         if (data) {
           setReports(data);
           // Fetch reporter profiles for credibility
@@ -36,8 +63,10 @@ const AdminVerifyPage = () => {
           }
         }
         setLoading(false);
-      });
-  }, [user]);
+    };
+
+    void loadReports();
+  }, [user, searchParams]);
 
   const handleAction = async (reportId: string, reporterId: string, action: "assigned" | "rejected") => {
     await supabase.from("waste_reports").update({ status: action } as any).eq("id", reportId);
