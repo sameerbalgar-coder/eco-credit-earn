@@ -18,17 +18,37 @@ const AdminVerifyPage = () => {
   useEffect(() => {
     if (!user) return;
     const hazardOnly = searchParams.get("type") === "hazardous";
-    let query = supabase
-      .from("waste_reports")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
+    const loadReports = async () => {
+      let citizenIds: string[] = [];
 
-    if (hazardOnly) {
-      query = query.eq("waste_type", "hazardous");
-    }
+      if (hazardOnly) {
+        const { data: citizens } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .eq("role", "citizen");
 
-    query.then(async ({ data }) => {
+        citizenIds = (citizens ?? [])
+          .filter((citizen) => !citizen.email?.toLowerCase().endsWith("@demo.local"))
+          .map((citizen) => citizen.id);
+
+        if (citizenIds.length === 0) {
+          setReports([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      let query = supabase
+        .from("waste_reports")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (hazardOnly) {
+        query = query.eq("waste_type", "hazardous").in("reporter_id", citizenIds);
+      }
+
+      const { data } = await query;
         if (data) {
           setReports(data);
           // Fetch reporter profiles for credibility
@@ -43,7 +63,9 @@ const AdminVerifyPage = () => {
           }
         }
         setLoading(false);
-      });
+    };
+
+    void loadReports();
   }, [user, searchParams]);
 
   const handleAction = async (reportId: string, reporterId: string, action: "assigned" | "rejected") => {
