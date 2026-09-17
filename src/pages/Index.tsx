@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Bell,
   BookOpen,
-  Users,
   ClipboardList,
   Truck,
 
@@ -28,7 +27,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const [recentReports, setRecentReports] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -39,13 +37,6 @@ const Index = () => {
       .order("created_at", { ascending: false })
       .limit(5)
       .then(({ data }) => { if (data) setRecentReports(data); });
-
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact" })
-      .eq("user_id", user.id)
-      .eq("read", false)
-      .then(({ count }) => setUnreadCount(count ?? 0));
   }, [user]);
 
   const timeAgo = (dateStr: string) => {
@@ -73,25 +64,12 @@ const Index = () => {
             <p className="text-xs text-muted-foreground">Hello, {displayName} 👋</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => navigate("/notifications")}
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card"
-          >
-            <Bell className="h-5 w-5 text-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-primary-foreground">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => navigate("/leaderboard")}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card"
-          >
-            <Trophy className="h-5 w-5 text-primary" />
-          </button>
-        </div>
+        <button
+          onClick={() => navigate("/leaderboard")}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card"
+        >
+          <Trophy className="h-5 w-5 text-primary" />
+        </button>
       </div>
 
       {/* Credit Banner */}
@@ -130,7 +108,6 @@ const Index = () => {
           <QuickAction icon={Truck} label="Pickup" to="/pickups" />
           <QuickAction icon={BookOpen} label="Materials" to="/materials" />
           <QuickAction icon={Bell} label="Alerts" to="/notifications" />
-          <QuickAction icon={Users} label="Events" to="/community" />
         </div>
         <div className="grid grid-cols-4 gap-3 mt-3">
           <QuickAction icon={ClipboardList} label="My Reports" to="/reports" />
