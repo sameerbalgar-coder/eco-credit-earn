@@ -119,20 +119,15 @@ const Index = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="mb-3 text-sm font-semibold text-foreground">Quick Actions</h2>
-      <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <QuickAction icon={Camera} label="Report" to="/report" />
-          <QuickAction icon={Recycle} label="Recycling" to="/recycling" />
           <QuickAction icon={AlertTriangle} label="Hazard" to="/hazard" />
           <QuickAction icon={MapPin} label="Map" to="/map" />
-        </div>
-        <div className="grid grid-cols-4 gap-3 mt-3">
+          <QuickAction icon={ClipboardList} label="My Reports" to="/reports" />
+          <QuickAction icon={Recycle} label="Recycling" to="/recycling" />
           <QuickAction icon={Truck} label="Pickup" to="/pickups" />
           <QuickAction icon={BookOpen} label="Materials" to="/materials" />
         </div>
-        <div className="grid grid-cols-4 gap-3 mt-3">
-          <QuickAction icon={ClipboardList} label="My Reports" to="/reports" />
-        </div>
-
       </div>
 
       {/* Recent Activity */}
