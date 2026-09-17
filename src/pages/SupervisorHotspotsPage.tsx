@@ -221,7 +221,7 @@ const SupervisorHotspotsPage = () => {
           <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapFocus target={focus} />
           {clusters.map((c) => {
-            const radius = 6 + Math.min(16, c.score * 1.6);
+            const radius = 10 + Math.min(30, c.score * 3);
             const color = heatColor(c.score);
             return (
               <CircleMarker
