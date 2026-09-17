@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, MapPin, Camera, Wallet, User, Shield, Users, BarChart3, Recycle, ClipboardList } from "lucide-react";
+import { Home, MapPin, Camera, Wallet, User, Users, BarChart3, ClipboardList } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const citizenNav = [
@@ -20,7 +20,6 @@ const supervisorNav = [
 
 const adminNav = [
   { to: "/", icon: Home, label: "Home" },
-  { to: "/admin/verify", icon: Shield, label: "Verify" },
   { to: "/admin/zones", icon: MapPin, label: "Zones" },
   { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/profile", icon: User, label: "Profile" },
