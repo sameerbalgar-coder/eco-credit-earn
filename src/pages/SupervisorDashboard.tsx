@@ -18,6 +18,7 @@ import {
   Send,
   Flame,
   MessageSquare,
+  Truck,
 } from "lucide-react";
 
 const SupervisorDashboard = () => {
@@ -180,6 +181,18 @@ const SupervisorDashboard = () => {
             </div>
           </button>
 
+          <button
+            onClick={() => navigate("/staff/pickups")}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:eco-shadow active:scale-[0.97]"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+              <Truck className="h-6 w-6 text-primary" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-foreground">Pickups</p>
+              <p className="text-[10px] text-muted-foreground">On-demand requests</p>
+            </div>
+          </button>
         </div>
       </div>
 
