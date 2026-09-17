@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Bell,
   BookOpen,
-  Users,
   ClipboardList,
   Truck,
 
@@ -129,8 +128,6 @@ const Index = () => {
         <div className="grid grid-cols-4 gap-3 mt-3">
           <QuickAction icon={Truck} label="Pickup" to="/pickups" />
           <QuickAction icon={BookOpen} label="Materials" to="/materials" />
-          <QuickAction icon={Bell} label="Alerts" to="/notifications" />
-          <QuickAction icon={Users} label="Events" to="/community" />
         </div>
         <div className="grid grid-cols-4 gap-3 mt-3">
           <QuickAction icon={ClipboardList} label="My Reports" to="/reports" />
