@@ -380,23 +380,30 @@ const SupervisorAssignPage = () => {
       {/* Assign bottom sheet */}
       {assignFor && (
         <div
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-0"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-foreground/60 p-4"
           onClick={() => {
             setAssignFor(null);
             setSelectedWorker(null);
           }}
         >
           <div
-            className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-8 max-h-[85vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assign-worker-title"
+            className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-background shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between">
+            <div className="flex shrink-0 items-start justify-between border-b border-border p-4">
               <div>
-                <p className="text-xs text-muted-foreground">Assign worker to</p>
-                <h2 className="text-base font-bold text-foreground capitalize">{assignFor.waste_type}</h2>
-                <p className="text-xs text-muted-foreground">{assignFor.address || "No address"}</p>
+                <h2 id="assign-worker-title" className="text-base font-bold text-foreground">
+                  {taskByReport[assignFor.id] ? "Reassign worker" : "Assign worker"}
+                </h2>
+                <p className="mt-0.5 max-w-[16rem] truncate text-xs capitalize text-muted-foreground">
+                  {assignFor.waste_type} · {assignFor.address || "No address"}
+                </p>
               </div>
               <button
+                aria-label="Close worker selection"
                 onClick={() => {
                   setAssignFor(null);
                   setSelectedWorker(null);
@@ -407,15 +414,19 @@ const SupervisorAssignPage = () => {
               </button>
             </div>
 
-            {workers.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No workers registered yet.</p>
-            ) : (
-              <>
-                <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="flex h-2 w-2 rounded-full bg-eco-success" />
-                  <span>{onlineWorkerCount} online now</span>
-                </div>
-                <div className="space-y-2">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              {workers.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No workers registered yet.</p>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Select a worker</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-eco-success" />
+                      {onlineWorkerCount} online
+                    </span>
+                  </div>
+                  <div className="space-y-2">
                   {[...workers]
                     .sort((a, b) => Number(onlineUserIds.has(b.id)) - Number(onlineUserIds.has(a.id)))
                     .map((w) => {
@@ -454,19 +465,21 @@ const SupervisorAssignPage = () => {
                         </button>
                       );
                     })}
-                </div>
-              </>
-            )}
+                  </div>
+                </>
+              )}
+            </div>
 
-
-            <button
-              onClick={handleAssign}
-              disabled={!selectedWorker || assigning}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 active:scale-[0.98]"
-            >
-              <Send className="h-4 w-4" />
-              {assigning ? "Assigning..." : "Confirm Assignment"}
-            </button>
+            <div className="shrink-0 border-t border-border bg-background p-4">
+              <button
+                onClick={handleAssign}
+                disabled={!selectedWorker || assigning}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 active:scale-[0.98]"
+              >
+                <Send className="h-4 w-4" />
+                {assigning ? "Assigning..." : taskByReport[assignFor.id] ? "Confirm Reassignment" : "Confirm Assignment"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -474,22 +487,26 @@ const SupervisorAssignPage = () => {
       {/* Proof modal */}
       {proofTask && (
         <div
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-foreground/60 p-4"
           onClick={() => setProofTask(null)}
         >
           <div
-            className="w-full max-w-md rounded-t-2xl bg-background p-5 pb-8 max-h-[90vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="completion-proof-title"
+            className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-background shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between">
+            <div className="flex shrink-0 items-start justify-between border-b border-border p-4">
               <div>
                 <p className="text-xs text-muted-foreground">Proof of completion</p>
-                <h2 className="text-base font-bold text-foreground capitalize">{proofTask.report.waste_type}</h2>
+                <h2 id="completion-proof-title" className="text-base font-bold text-foreground capitalize">{proofTask.report.waste_type}</h2>
                 <p className="text-xs text-muted-foreground">
                   by {profiles[proofTask.task.worker_id]?.display_name || "Worker"}
                 </p>
               </div>
               <button
+                aria-label="Close completion proof"
                 onClick={() => setProofTask(null)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-border"
               >
@@ -497,6 +514,7 @@ const SupervisorAssignPage = () => {
               </button>
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="mb-1 text-[10px] font-semibold uppercase text-muted-foreground">Before</p>
@@ -564,6 +582,7 @@ const SupervisorAssignPage = () => {
                 </a>
               )}
             </div>
+            </div>
           </div>
         </div>
       )}
@@ -571,7 +590,7 @@ const SupervisorAssignPage = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/90 p-4"
           onClick={() => setLightbox(null)}
         >
           <button
@@ -579,7 +598,7 @@ const SupervisorAssignPage = () => {
               e.stopPropagation();
               setLightbox(null);
             }}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-background/10 text-background"
           >
             <X className="h-5 w-5" />
           </button>
