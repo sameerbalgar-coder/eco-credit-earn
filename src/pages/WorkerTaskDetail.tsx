@@ -136,10 +136,26 @@ const WorkerTaskDetail = () => {
         await supabase.from("waste_reports").update({ status: "in_progress" }).eq("id", task.report_id);
       } else if (newStatus === "completed") {
         await supabase.from("waste_reports").update({ status: "completed" }).eq("id", task.report_id);
+
+        // Award carbon credits to the worker for completing the task
+        if (task.worker_id) {
+          const qty = weightKg ? parseFloat(weightKg) : (report?.quantity_kg ?? 1);
+          const baseCredits = Math.max(20, Math.round(qty * 20));
+          const co2Kg = Math.round(qty * 2.5 * 10) / 10;
+          const { error: rpcError } = await supabase.rpc("award_carbon_credits", {
+            p_user_id: task.worker_id,
+            p_amount: baseCredits,
+            p_transaction_type: "task_completed",
+            p_description: `Task completed: ${report?.waste_type ?? "waste"} (${qty}kg)`,
+            p_related_report_id: task.report_id,
+            p_co2_kg: co2Kg,
+          });
+          if (rpcError) console.error("Credit award failed:", rpcError.message);
+        }
       }
 
       setTask({ ...task, ...updates });
-      toast({ title: "Updated", description: `Task marked as ${newStatus.replace("_", " ")}` });
+      toast({ title: "Updated", description: newStatus === "completed" ? `Task completed! +${Math.max(20, Math.round((weightKg ? parseFloat(weightKg) : report?.quantity_kg ?? 1) * 20))} credits earned` : `Task marked as ${newStatus.replace("_", " ")}` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

@@ -49,7 +49,7 @@ const SupervisorVerifyPage = () => {
     void loadReports();
   }, [user]);
 
-  const handleAction = async (reportId: string, reporterId: string, action: "assigned" | "rejected") => {
+  const handleAction = async (reportId: string, reporterId: string, action: "assigned" | "rejected", wasteType?: string, quantityKg?: number | null) => {
     try {
       await supabase.from("waste_reports").update({ status: action } as any).eq("id", reportId);
 
@@ -57,8 +57,27 @@ const SupervisorVerifyPage = () => {
       const current = reporters[reporterId]?.credibility_score ?? 50;
       await supabase.from("profiles").update({ credibility_score: Math.max(0, Math.min(100, current + delta)) } as any).eq("id", reporterId);
 
+      if (action === "assigned") {
+        const qty = quantityKg ?? 1;
+        const baseCredits = Math.max(10, Math.round(qty * 15));
+        const co2Kg = Math.round(qty * 2.5 * 10) / 10;
+        const desc = `Report verified: ${wasteType ?? "waste"} (${qty}kg)`;
+        const { error: rpcError } = await supabase.rpc("award_carbon_credits", {
+          p_user_id: reporterId,
+          p_amount: baseCredits,
+          p_transaction_type: "report_verified",
+          p_description: desc,
+          p_related_report_id: reportId,
+          p_co2_kg: co2Kg,
+        });
+        if (rpcError) console.error("Credit award failed:", rpcError.message);
+      }
+
       setReports(prev => prev.filter(r => r.id !== reportId));
-      toast({ title: action === "assigned" ? "Report Verified ✅" : "Report Rejected" });
+      toast({
+        title: action === "assigned" ? "Report Verified ✅" : "Report Rejected",
+        description: action === "assigned" ? "Carbon credits awarded to reporter." : undefined,
+      });
     } catch {
       toast({ title: "Action failed", description: "Please try again.", variant: "destructive" });
     }
@@ -140,10 +159,10 @@ const SupervisorVerifyPage = () => {
                   )}
 
                   <div className="flex gap-2 pt-1">
-                    <Button size="sm" className="flex-1 rounded-lg" onClick={() => handleAction(r.id, r.reporter_id, "assigned")}>
+                    <Button size="sm" className="flex-1 rounded-lg" onClick={() => handleAction(r.id, r.reporter_id, "assigned", r.waste_type, r.quantity_kg)}>
                       <CheckCircle className="mr-1.5 h-4 w-4" /> Verify & Approve
                     </Button>
-                    <Button size="sm" variant="outline" className="rounded-lg text-destructive border-destructive/30" onClick={() => handleAction(r.id, r.reporter_id, "rejected")}>
+                    <Button size="sm" variant="outline" className="rounded-lg text-destructive border-destructive/30" onClick={() => handleAction(r.id, r.reporter_id, "rejected", r.waste_type, r.quantity_kg)}>
                       <XCircle className="mr-1.5 h-4 w-4" /> Reject
                     </Button>
                   </div>
