@@ -50,7 +50,7 @@ const WalletPage = () => {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(30);
-      if (txData) setTransactions(txData as Transaction[]);
+      if (txData) setTransactions(txData as unknown as Transaction[]);
     } catch {
       setTransactions([]);
     } finally {
