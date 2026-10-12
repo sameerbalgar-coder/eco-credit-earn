@@ -47,6 +47,7 @@ export type Database = {
       credit_transactions: {
         Row: {
           amount: number
+          co2_kg: number | null
           created_at: string
           description: string | null
           id: string
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          co2_kg?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -65,6 +67,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          co2_kg?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -367,6 +370,7 @@ export type Database = {
       rewards: {
         Row: {
           active: boolean
+          co2_cost_kg: number | null
           created_at: string
           created_by: string | null
           credit_cost: number
@@ -380,6 +384,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          co2_cost_kg?: number | null
           created_at?: string
           created_by?: string | null
           credit_cost?: number
@@ -393,6 +398,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          co2_cost_kg?: number | null
           created_at?: string
           created_by?: string | null
           credit_cost?: number
@@ -488,6 +494,7 @@ export type Database = {
       }
       waste_categories: {
         Row: {
+          co2_saved_per_kg: number | null
           credits_per_kg: number
           handling_info: string | null
           icon: string | null
@@ -496,6 +503,7 @@ export type Database = {
           recycling_method: string | null
         }
         Insert: {
+          co2_saved_per_kg?: number | null
           credits_per_kg?: number
           handling_info?: string | null
           icon?: string | null
@@ -504,6 +512,7 @@ export type Database = {
           recycling_method?: string | null
         }
         Update: {
+          co2_saved_per_kg?: number | null
           credits_per_kg?: number
           handling_info?: string | null
           icon?: string | null
@@ -634,6 +643,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_carbon_credits: {
+        Args: {
+          p_amount: number
+          p_co2_kg?: number
+          p_description?: string
+          p_related_report_id?: string
+          p_transaction_type: string
+          p_user_id: string
+        }
+        Returns: number
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
