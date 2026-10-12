@@ -80,7 +80,7 @@ const AdminVerifyPage = () => {
       const qty = quantityKg ?? 1;
       const baseCredits = Math.max(10, Math.round(qty * 15));
       const co2Kg = Math.round(qty * 2.5 * 10) / 10;
-      const { error: rpcError } = await supabase.rpc("award_carbon_credits", {
+      const { error: rpcError } = await (supabase.rpc as any)("award_carbon_credits", {
         p_user_id: reporterId,
         p_amount: baseCredits,
         p_transaction_type: "report_verified",

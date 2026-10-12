@@ -142,7 +142,7 @@ const WorkerTaskDetail = () => {
           const qty = weightKg ? parseFloat(weightKg) : (report?.quantity_kg ?? 1);
           const baseCredits = Math.max(20, Math.round(qty * 20));
           const co2Kg = Math.round(qty * 2.5 * 10) / 10;
-          const { error: rpcError } = await supabase.rpc("award_carbon_credits", {
+          const { error: rpcError } = await (supabase.rpc as any)("award_carbon_credits", {
             p_user_id: task.worker_id,
             p_amount: baseCredits,
             p_transaction_type: "task_completed",
