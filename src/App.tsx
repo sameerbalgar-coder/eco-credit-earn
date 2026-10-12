@@ -1,3 +1,5 @@
+import React from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -58,14 +60,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const PageTransition = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-  return (
-    <div key={location.pathname} className="page-enter">
-      {children}
-    </div>
-  );
-};
+const PageTransition = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(
+  ({ children }, ref) => {
+    const location = useLocation();
+    return (
+      <div ref={ref} key={location.pathname} className="page-enter">
+        <ErrorBoundary>{children}</ErrorBoundary>
+      </div>
+    );
+  }
+);
+PageTransition.displayName = "PageTransition";
 
 const RoleBasedHome = () => {
   const { profile } = useAuth();

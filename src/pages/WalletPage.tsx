@@ -50,7 +50,7 @@ const WalletPage = () => {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(30);
-      if (txData) setTransactions(txData as Transaction[]);
+      if (txData) setTransactions(txData as unknown as Transaction[]);
     } catch {
       setTransactions([]);
     } finally {
@@ -87,7 +87,7 @@ const WalletPage = () => {
     setRedeeming(reward.id);
     try {
       // Deduct credits via the award function (negative amount)
-      const { error: rpcError } = await supabase.rpc("award_carbon_credits", {
+      const { error: rpcError } = await (supabase.rpc as any)("award_carbon_credits", {
         p_user_id: user!.id,
         p_amount: -reward.credit_cost,
         p_transaction_type: "redeemed",
