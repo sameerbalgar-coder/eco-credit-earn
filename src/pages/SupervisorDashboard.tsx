@@ -18,6 +18,7 @@ import {
   Send,
   Flame,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 
 const SupervisorDashboard = () => {
@@ -177,6 +178,19 @@ const SupervisorDashboard = () => {
             <div className="text-left">
               <p className="text-sm font-medium text-foreground">Community</p>
               <p className="text-[10px] text-muted-foreground">Moderate feed</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/supervisor/verify")}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-all hover:eco-shadow active:scale-[0.97]"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-eco-success/10">
+              <ShieldCheck className="h-6 w-6 text-eco-success" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-foreground">Verify Reports</p>
+              <p className="text-[10px] text-muted-foreground">Review & approve</p>
             </div>
           </button>
 

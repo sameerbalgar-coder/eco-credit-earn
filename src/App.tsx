@@ -21,6 +21,7 @@ import SupervisorAssignPage from "./pages/SupervisorAssignPage";
 import SupervisorWorkersPage from "./pages/SupervisorWorkersPage";
 import SupervisorCommunityPage from "./pages/SupervisorCommunityPage";
 import SupervisorHotspotsPage from "./pages/SupervisorHotspotsPage";
+import SupervisorVerifyPage from "./pages/SupervisorVerifyPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminVerifyPage from "./pages/AdminVerifyPage";
 import AdminZonesPage from "./pages/AdminZonesPage";
@@ -114,6 +115,7 @@ const App = () => (
                       <Route path="/supervisor/workers" element={<SupervisorWorkersPage />} />
                       <Route path="/supervisor/community" element={<SupervisorCommunityPage />} />
                       <Route path="/supervisor/hotspots" element={<SupervisorHotspotsPage />} />
+                      <Route path="/supervisor/verify" element={<SupervisorVerifyPage />} />
                       <Route path="/admin/hotspots" element={<SupervisorHotspotsPage />} />
                       <Route path="/admin/verify" element={<AdminVerifyPage />} />
                       <Route path="/admin/zones" element={<AdminZonesPage />} />
