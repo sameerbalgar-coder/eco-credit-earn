@@ -8,6 +8,13 @@
       "when": 1791916165047,
       "tag": "0000_supervisor_review_and_security_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791916194529,
+      "tag": "0001_fix_demo_email_match",
+      "breakpoints": true
     }
   ]
 }
