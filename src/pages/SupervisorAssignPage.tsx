@@ -2,23 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ArrowLeft,
-  UserCheck,
-  MapPin,
-  Send,
-  X,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Camera,
-  StickyNote,
-  Weight,
-  Image as ImageIcon,
-  ShieldCheck,
-  Flag,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, UserCheck, MapPin, Send, X, Clock, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Camera, StickyNote, Weight, Image as ImageIcon, ShieldCheck, Flag, Loader as Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Tab = "pending" | "in_progress" | "completed";
@@ -70,8 +54,10 @@ const SupervisorAssignPage = () => {
   const { user, onlineUserIds } = useAuth();
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<Tab>("pending");
   const [searchParams] = useSearchParams();
+  const validTabs: Tab[] = ["pending", "in_progress", "completed"];
+  const queryTab = searchParams.get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(queryTab && validTabs.includes(queryTab) ? queryTab : "pending");
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") ?? "all");
   const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
