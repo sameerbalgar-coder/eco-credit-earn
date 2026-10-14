@@ -155,7 +155,7 @@ const WorkerTaskDetail = () => {
       }
 
       setTask({ ...task, ...updates });
-      toast({ title: "Updated", description: newStatus === "completed" ? "Task completed! Sent to supervisor for verification." : `Task marked as ${newStatus.replace("_", " ")}` });
+      toast({ title: "Updated", description: newStatus === "completed" ? `Task completed! +${Math.max(20, Math.round((weightKg ? parseFloat(weightKg) : report?.quantity_kg ?? 1) * 20))} credits earned` : `Task marked as ${newStatus.replace("_", " ")}` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

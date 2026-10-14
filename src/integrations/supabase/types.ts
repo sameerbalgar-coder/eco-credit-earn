@@ -530,20 +530,15 @@ export type Database = {
           created_at: string
           credits_awarded: number | null
           description: string | null
-          flagged_at: string | null
-          flagged_by: string | null
           id: string
           latitude: number | null
           longitude: number | null
           photo_urls: string[] | null
           quantity_kg: number | null
           reporter_id: string
-          review_reason: string | null
           status: Database["public"]["Enums"]["report_status"]
           updated_at: string
           upvote_count: number
-          verified_at: string | null
-          verified_by: string | null
           waste_type: string
         }
         Insert: {
@@ -553,20 +548,15 @@ export type Database = {
           created_at?: string
           credits_awarded?: number | null
           description?: string | null
-          flagged_at?: string | null
-          flagged_by?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           photo_urls?: string[] | null
           quantity_kg?: number | null
           reporter_id: string
-          review_reason?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           updated_at?: string
           upvote_count?: number
-          verified_at?: string | null
-          verified_by?: string | null
           waste_type: string
         }
         Update: {
@@ -576,20 +566,15 @@ export type Database = {
           created_at?: string
           credits_awarded?: number | null
           description?: string | null
-          flagged_at?: string | null
-          flagged_by?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           photo_urls?: string[] | null
           quantity_kg?: number | null
           reporter_id?: string
-          review_reason?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           updated_at?: string
           upvote_count?: number
-          verified_at?: string | null
-          verified_by?: string | null
           waste_type?: string
         }
         Relationships: []
@@ -689,15 +674,6 @@ export type Database = {
         }
         Returns: number
       }
-      verify_completed_report: {
-        Args: {
-          p_action: string
-          p_reason?: string
-          p_report_id: string
-          p_verified_weight?: number
-        }
-        Returns: Json
-      }
     }
     Enums: {
       app_role: "citizen" | "worker" | "supervisor" | "admin"
@@ -713,7 +689,6 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "rejected"
-        | "verified"
       task_status: "pending" | "assigned" | "in_progress" | "completed"
     }
     CompositeTypes: {
@@ -856,7 +831,6 @@ export const Constants = {
         "in_progress",
         "completed",
         "rejected",
-        "verified",
       ],
       task_status: ["pending", "assigned", "in_progress", "completed"],
     },

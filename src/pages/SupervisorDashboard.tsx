@@ -4,7 +4,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import ecoLogo from "@/assets/ecocredit-logo.png";
 import StatCard from "@/components/StatCard";
-import { Users, ClipboardList, MapPin, Camera, Bell, ChevronRight, CircleCheck as CheckCircle, Clock, TriangleAlert as AlertTriangle, UserPlus, Send, Flame, MessageSquare, ShieldCheck } from "lucide-react";
+import {
+  Users,
+  ClipboardList,
+  MapPin,
+  Camera,
+  Bell,
+  ChevronRight,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  UserPlus,
+  Send,
+  Flame,
+  MessageSquare,
+  ShieldCheck,
+} from "lucide-react";
 
 const SupervisorDashboard = () => {
   const navigate = useNavigate();
@@ -92,9 +107,9 @@ const SupervisorDashboard = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-3 gap-3 animate-slide-up">
-        <StatCard icon={Clock} label="Pending" value={stats.pending.toString()} variant="primary" onClick={() => navigate("/supervisor/assign?tab=pending")} />
-        <StatCard icon={AlertTriangle} label="In Progress" value={stats.inProgress.toString()} onClick={() => navigate("/supervisor/assign?tab=in_progress")} />
-        <StatCard icon={CheckCircle} label="Completed" value={stats.completed.toString()} onClick={() => navigate("/supervisor/assign?tab=completed")} />
+        <StatCard icon={Clock} label="Pending" value={stats.pending.toString()} variant="primary" />
+        <StatCard icon={AlertTriangle} label="In Progress" value={stats.inProgress.toString()} />
+        <StatCard icon={CheckCircle} label="Completed" value={stats.completed.toString()} />
       </div>
 
       {/* Quick Actions */}
