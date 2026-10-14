@@ -99,6 +99,8 @@ const App = () => (
                     <PageTransition>
                     <Routes>
                       <Route path="/" element={<RoleBasedHome />} />
+                      <Route path="/index" element={<Navigate to="/" replace />} />
+                      <Route path="/index.html" element={<Navigate to="/" replace />} />
                       <Route path="/report" element={<ReportPage />} />
                       <Route path="/hazard" element={<HazardPage />} />
                       <Route path="/map" element={<MapPage />} />
