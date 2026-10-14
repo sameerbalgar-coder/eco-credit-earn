@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const badgeColors: Record<string, string> = {
   Bronze: "bg-[hsl(var(--eco-badge-bronze))]",
@@ -51,6 +52,7 @@ function getPriority(report: any): string {
 const WorkerDashboard = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<any[]>([]);
   const [reports, setReports] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -124,27 +126,44 @@ const WorkerDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-3 animate-slide-up">
-        <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-3.5">
+        <button
+          onClick={() => {
+            const first = tasks.find((t) => t.status === "assigned");
+            if (first) navigate(`/worker/task/${first.id}`);
+            else toast({ title: "No assigned tasks", description: "You have no tasks waiting to be started." });
+          }}
+          className="flex flex-col items-center rounded-2xl border border-border bg-card p-3.5 transition-all hover:eco-shadow active:scale-[0.97]"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-eco-info/10 mb-1.5">
             <ClipboardList className="h-4.5 w-4.5 text-eco-info" />
           </div>
           <span className="text-xl font-bold text-foreground">{assignedCount}</span>
           <span className="text-[10px] text-muted-foreground text-center">Assigned</span>
-        </div>
-        <div className="flex flex-col items-center rounded-2xl border border-primary/20 eco-gradient-soft p-3.5">
+        </button>
+        <button
+          onClick={() => {
+            const first = tasks.find((t) => t.status === "in_progress");
+            if (first) navigate(`/worker/task/${first.id}`);
+            else toast({ title: "No in-progress tasks", description: "You have no tasks in progress right now." });
+          }}
+          className="flex flex-col items-center rounded-2xl border border-primary/20 eco-gradient-soft p-3.5 transition-all hover:eco-shadow active:scale-[0.97]"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-eco-warning/10 mb-1.5">
             <Play className="h-4.5 w-4.5 text-eco-warning" />
           </div>
           <span className="text-xl font-bold text-foreground">{inProgressCount}</span>
           <span className="text-[10px] text-muted-foreground text-center">In Progress</span>
-        </div>
-        <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-3.5">
+        </button>
+        <button
+          onClick={() => navigate("/worker/history")}
+          className="flex flex-col items-center rounded-2xl border border-border bg-card p-3.5 transition-all hover:eco-shadow active:scale-[0.97]"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-eco-success/10 mb-1.5">
             <CheckCircle2 className="h-4.5 w-4.5 text-eco-success" />
           </div>
           <span className="text-xl font-bold text-foreground">{completedTodayCount}</span>
           <span className="text-[10px] text-muted-foreground text-center">Done Today</span>
-        </div>
+        </button>
       </div>
 
       {/* My Assigned Tasks */}

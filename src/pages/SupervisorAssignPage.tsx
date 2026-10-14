@@ -2,20 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ArrowLeft,
-  UserCheck,
-  MapPin,
-  Send,
-  X,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Camera,
-  StickyNote,
-  Weight,
-  Image as ImageIcon,
-} from "lucide-react";
+import { ArrowLeft, UserCheck, MapPin, Send, X, Clock, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Camera, StickyNote, Weight, Image as ImageIcon, ShieldCheck, Flag, Loader as Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Tab = "pending" | "in_progress" | "completed";
@@ -32,6 +19,10 @@ interface Report {
   created_at: string;
   reporter_id: string;
   assigned_worker_id: string | null;
+  credits_awarded?: number | null;
+  verified_at?: string | null;
+  review_reason?: string | null;
+  flagged_at?: string | null;
 }
 
 interface Task {
@@ -63,8 +54,10 @@ const SupervisorAssignPage = () => {
   const { user, onlineUserIds } = useAuth();
   const { toast } = useToast();
 
-  const [tab, setTab] = useState<Tab>("pending");
   const [searchParams] = useSearchParams();
+  const validTabs: Tab[] = ["pending", "in_progress", "completed"];
+  const queryTab = searchParams.get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(queryTab && validTabs.includes(queryTab) ? queryTab : "pending");
   const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("type") ?? "all");
   const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -76,6 +69,10 @@ const SupervisorAssignPage = () => {
   const [assigning, setAssigning] = useState(false);
 
   const [proofTask, setProofTask] = useState<{ task: Task; report: Report } | null>(null);
+  const [flagFor, setFlagFor] = useState<{ task: Task; report: Report } | null>(null);
+  const [flagReason, setFlagReason] = useState("Duplicate report");
+  const [flagDetails, setFlagDetails] = useState("");
+  const [reviewing, setReviewing] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const refetch = async () => {
@@ -203,6 +200,47 @@ const SupervisorAssignPage = () => {
       toast({ title: "Error", description: taskErr.message, variant: "destructive" });
     }
     setAssigning(false);
+  };
+
+  const handleReview = async (report: Report, action: "verify" | "flag_fake", reason?: string) => {
+    const task = taskByReport[report.id];
+    if (!task) return;
+    setReviewing(true);
+    const verifiedWeight = task.weight_kg ?? null;
+    const { data, error } = await supabase.rpc("verify_completed_report" as any, {
+      p_report_id: report.id,
+      p_action: action,
+      p_verified_weight: verifiedWeight,
+      p_reason: reason ?? null,
+    });
+
+    if (error) {
+      setReviewing(false);
+      toast({ title: "Review could not be completed", description: "Please try again.", variant: "destructive" });
+      return;
+    }
+
+    const result = data as { status?: string; credits_awarded?: number; already_verified?: boolean } | null;
+    setReviewing(false);
+    setProofTask(null);
+    setFlagFor(null);
+    setFlagDetails("");
+    await refetch();
+
+    if (action === "verify") {
+      toast({
+        title: result?.already_verified ? "Already verified" : "Cleanup verified",
+        description: `${result?.credits_awarded ?? 0} carbon credits released to the reporting citizen.`,
+      });
+    } else {
+      toast({ title: "Report flagged as fake", description: "No carbon credits were released." });
+    }
+  };
+
+  const openFlagDialog = (report: Report, task: Task) => {
+    setFlagReason("Duplicate report");
+    setFlagDetails("");
+    setFlagFor({ report, task });
   };
 
   const tabList: { key: Tab; label: string; count: number; icon: any; color: string }[] = [
@@ -363,12 +401,22 @@ const SupervisorAssignPage = () => {
                     </button>
                   )}
                   {tab === "completed" && task && (
-                    <button
-                      onClick={() => setProofTask({ task, report: r })}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground active:scale-[0.98]"
-                    >
-                      <Camera className="h-3.5 w-3.5" /> View Proof
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setProofTask({ task, report: r })}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground active:scale-[0.98]"
+                      >
+                        <Camera className="h-3.5 w-3.5" /> View Proof
+                      </button>
+                      {r.status !== "verified" && (
+                        <button
+                          onClick={() => openFlagDialog(r, task)}
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive active:scale-[0.98]"
+                        >
+                          <Flag className="h-3.5 w-3.5" /> Flag
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -504,6 +552,11 @@ const SupervisorAssignPage = () => {
                 <p className="text-xs text-muted-foreground">
                   by {profiles[proofTask.task.worker_id]?.display_name || "Worker"}
                 </p>
+                <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${
+                  proofTask.report.status === "verified" ? "bg-eco-success/10 text-eco-success" : "bg-eco-warning/10 text-eco-warning"
+                }`}>
+                  {proofTask.report.status === "verified" ? "Verified" : "Awaiting Verification"}
+                </span>
               </div>
               <button
                 aria-label="Close completion proof"
@@ -582,6 +635,87 @@ const SupervisorAssignPage = () => {
                 </a>
               )}
             </div>
+
+            <div className="shrink-0 space-y-2 border-t border-border bg-background p-4">
+              {proofTask.report.status === "verified" ? (
+                <div className="flex items-center gap-2 rounded-lg bg-eco-success/10 p-3 text-xs text-eco-success">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>
+                    Verified {proofTask.report.verified_at ? timeAgo(proofTask.report.verified_at) : "already"} · {proofTask.report.credits_awarded ?? 0} credits released
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleReview(proofTask.report, "verify")}
+                  disabled={reviewing}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  Verify & Release Credits
+                </button>
+              )}
+              {proofTask.report.status !== "verified" && (
+                <button
+                  onClick={() => openFlagDialog(proofTask.report, proofTask.task)}
+                  disabled={reviewing}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/30 p-3 text-sm font-semibold text-destructive disabled:opacity-50"
+                >
+                  <Flag className="h-4 w-4" /> Flag as Fake
+                </button>
+              )}
+            </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {flagFor && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-foreground/60 p-4" onClick={() => setFlagFor(null)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="flag-report-title"
+            className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <Flag className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h2 id="flag-report-title" className="text-base font-bold text-foreground">Flag as Fake Report?</h2>
+                <p className="mt-1 text-xs text-muted-foreground">This rejects the report and prevents carbon credits from being released.</p>
+              </div>
+            </div>
+            <label className="mt-4 block text-xs font-semibold text-foreground" htmlFor="flag-reason">Reason</label>
+            <select
+              id="flag-reason"
+              value={flagReason}
+              onChange={(event) => setFlagReason(event.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm"
+            >
+              <option>Duplicate report</option>
+              <option>Not actual waste</option>
+              <option>Staged / fraudulent photo</option>
+              <option>Other</option>
+            </select>
+            <textarea
+              value={flagDetails}
+              onChange={(event) => setFlagDetails(event.target.value)}
+              placeholder="Optional details"
+              maxLength={300}
+              className="mt-3 min-h-20 w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm"
+            />
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setFlagFor(null)} disabled={reviewing} className="flex-1 rounded-xl border border-border p-3 text-sm font-semibold text-foreground">Cancel</button>
+              <button
+                onClick={() => handleReview(flagFor.report, "flag_fake", `${flagReason}${flagDetails.trim() ? `: ${flagDetails.trim()}` : ""}`)}
+                disabled={reviewing}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive p-3 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
+              >
+                {reviewing && <Loader2 className="h-4 w-4 animate-spin" />}
+                Confirm Flag
+              </button>
             </div>
           </div>
         </div>
