@@ -559,7 +559,7 @@ const ReportPage = () => {
           <Button
             onClick={() => setStep(step + 1)}
             className="w-full rounded-xl py-6 text-sm font-semibold"
-            disabled={step === 0 && photos.length === 0}
+            disabled={step === 0 && (photos.length === 0 || verifying)}
           >
             Continue <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
