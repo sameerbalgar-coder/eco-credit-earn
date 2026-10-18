@@ -207,18 +207,15 @@ const SupervisorAssignPage = () => {
     const task = taskByReport[report.id];
     if (!task) return;
     setReviewing(true);
-    const weight = task.weight_kg ?? 1;
-    const co2Kg = Math.round(weight * 1.5 * 10) / 10;
-    const { data, error } = await supabase.rpc("verify_completed_report" as any, {
+    const { data, error } = await supabase.rpc("verify_completed_report", {
       p_report_id: report.id,
-      p_supervisor_id: user.id,
-      p_credits_awarded: 20,
-      p_co2_kg: co2Kg,
+      p_action: "verify",
+      p_verified_weight: task.weight_kg ?? undefined,
     });
 
     if (error) {
       setReviewing(false);
-      toast({ title: "Verification failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Verification failed", description: error.message || "Please try again.", variant: "destructive" });
       return;
     }
 
@@ -229,23 +226,18 @@ const SupervisorAssignPage = () => {
 
     toast({
       title: result?.already_verified ? "Already verified" : "Cleanup verified",
-      description: `${result?.credits_awarded ?? 20} carbon credits released to the reporting citizen.`,
+      description: `${result?.credits_awarded ?? 0} carbon credits released to the reporting citizen.`,
     });
   };
 
   const handleFlagFake = async (report: Report, reason: string) => {
     if (!user) return;
     setReviewing(true);
-    const { error } = await supabase
-      .from("waste_reports")
-      .update({
-        status: "rejected" as any,
-        is_flagged: true,
-        flag_reason: reason,
-        flagged_by: user.id,
-        verification_status: "rejected",
-      })
-      .eq("id", report.id);
+    const { error } = await supabase.rpc("verify_completed_report", {
+      p_report_id: report.id,
+      p_action: "flag_fake",
+      p_reason: reason,
+    });
 
     setReviewing(false);
     setProofTask(null);
