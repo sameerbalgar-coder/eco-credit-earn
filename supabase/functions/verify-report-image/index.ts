@@ -28,9 +28,12 @@ Deno.serve(async (req) => {
     }
 
     const key = Deno.env.get("GEMINI_API_KEY");
-    if (!key) return json({ error: "AI check not configured" }, 500);
+    if (!key) return json({ bypassed: true, reason: "not_configured" });
 
-    const r = await fetch(
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    let r: Response;
+    try { r = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${key}`,
       {
         method: "POST",
@@ -39,17 +42,18 @@ Deno.serve(async (req) => {
           contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mime, data: image } }] }],
           generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
         }),
+        signal: ctrl.signal,
       },
-    );
-    if (r.status === 429) return json({ error: "rate_limited", message: "AI check is busy. Try again in a minute." }, 429);
+    ); } catch { return json({ bypassed: true, reason: "timeout" }); } finally { clearTimeout(timer); }
+    if (r.status === 429) return json({ bypassed: true, reason: "rate_limited" });
     if (!r.ok) {
-      console.error("gemini", r.status, await r.text());
-      return json({ error: "ai_unavailable", message: "AI check unavailable right now." }, 502);
+      console.error("gemini", r.status, await r.text().catch(() => ""));
+      return json({ bypassed: true, reason: "ai_unavailable" });
     }
     const d = await r.json();
     const text = (d?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join(""); if (!text) console.error("empty", JSON.stringify(d).slice(0, 500));
     let v: any;
-    try { v = JSON.parse(text.replace(/```json|```/g, "").trim()); } catch { return json({ error: "ai_unavailable", message: "AI check returned no result." }, 502); }
+    try { v = JSON.parse(text.replace(/```json|```/g, "").trim()); } catch { return json({ bypassed: true, reason: "no_result" }); }
     return json({
       is_authentic: !!v.is_authentic && !v.is_ai_generated,
       is_ai_generated: !!v.is_ai_generated,
@@ -59,6 +63,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    return json({ error: "server_error", message: "Something went wrong." }, 500);
+    return json({ bypassed: true, reason: "server_error" });
   }
 });
