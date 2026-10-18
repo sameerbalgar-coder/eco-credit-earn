@@ -27,6 +27,10 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid image" }, 400);
     }
 
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const log = async (outcome: string, reason?: string) => {
+      try { await admin.from("ai_usage_logs").insert({ user_id: u.user.id, model: "gemini-3.8-flash", outcome, reason: reason?.slice(0, 200) ?? null }); } catch { /* never block */ }
+    };
     const key = Deno.env.get("GEMINI_API_KEY");
     if (!key) return json({ bypassed: true, reason: "not_configured" });
 
@@ -44,16 +48,19 @@ Deno.serve(async (req) => {
         }),
         signal: ctrl.signal,
       },
-    ); } catch { return json({ bypassed: true, reason: "timeout" }); } finally { clearTimeout(timer); }
-    if (r.status === 429) return json({ bypassed: true, reason: "rate_limited" });
+    ); } catch { await log("bypassed", "timeout"); return json({ bypassed: true, reason: "timeout" }); } finally { clearTimeout(timer); }
+    if (r.status === 429) { await log("bypassed", "rate_limited"); return json({ bypassed: true, reason: "rate_limited" }); }
     if (!r.ok) {
       console.error("gemini", r.status, await r.text().catch(() => ""));
+      await log("bypassed", "ai_unavailable");
       return json({ bypassed: true, reason: "ai_unavailable" });
     }
     const d = await r.json();
     const text = (d?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join(""); if (!text) console.error("empty", JSON.stringify(d).slice(0, 500));
     let v: any;
-    try { v = JSON.parse(text.replace(/```json|```/g, "").trim()); } catch { return json({ bypassed: true, reason: "no_result" }); }
+    try { v = JSON.parse(text.replace(/```json|```/g, "").trim()); } catch { await log("bypassed", "no_result"); return json({ bypassed: true, reason: "no_result" }); }
+    const authentic = !!v.is_authentic && !v.is_ai_generated;
+    await log(authentic ? "authentic" : "flagged_fake", String(v.reason ?? ""));
     return json({
       is_authentic: !!v.is_authentic && !v.is_ai_generated,
       is_ai_generated: !!v.is_ai_generated,
