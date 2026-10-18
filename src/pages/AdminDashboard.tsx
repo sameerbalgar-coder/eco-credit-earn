@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ecoLogo from "@/assets/ecocredit-logo.png";
 import StatCard from "@/components/StatCard";
+import AiUsageCard from "@/components/AiUsageCard";
 import {
   Shield, ClipboardCheck, Users, MapPin, Bell,
   CheckCircle, Clock, Flame, MessageSquare, Gift,
@@ -90,6 +91,8 @@ const AdminDashboard = () => {
           )}
         </button>
       </div>
+
+      <AiUsageCard />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 animate-slide-up">
