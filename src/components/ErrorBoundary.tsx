@@ -25,6 +25,18 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State
             <Button variant="outline" onClick={() => this.setState({ error: null })}>Try again</Button>
             <Button onClick={() => (window.location.href = "/")}>Go home</Button>
           </div>
+          <div className="mt-2 flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignore */ }
+                window.location.href = "/auth";
+              }}
+            >
+              Clear session & restart
+            </Button>
+          </div>
         </div>
       </div>
     );
