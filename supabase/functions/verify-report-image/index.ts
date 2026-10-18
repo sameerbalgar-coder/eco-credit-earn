@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mime, data: image } }] }],
-          generationConfig: { maxOutputTokens: 150, temperature: 0, responseMimeType: "application/json" },
+          generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
         }),
       },
     );
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       return json({ error: "ai_unavailable", message: "AI check unavailable right now." }, 502);
     }
     const d = await r.json();
-    const text = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const text = (d?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join(""); if (!text) console.error("empty", JSON.stringify(d).slice(0, 500));
     let v: any;
     try { v = JSON.parse(text.replace(/```json|```/g, "").trim()); } catch { return json({ error: "ai_unavailable", message: "AI check returned no result." }, 502); }
     return json({
