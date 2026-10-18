@@ -77,9 +77,53 @@ const HazardPage = () => {
     detectLocation();
   }, []);
 
+  const [verifying, setVerifying] = useState(false);
+
+  // AI authenticity check — never blocks on errors/quota (fails open, 3-min pause)
+  const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string }> => {
+    const until = Number(sessionStorage.getItem("ai_check_paused_until") || 0);
+    if (Date.now() < until) return { ok: true };
+    const pause = () => sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
+    try {
+      const b64 = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const s = Math.min(1, 640 / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+          c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(img.src);
+          resolve(c.toDataURL("image/jpeg", 0.7).split(",")[1]);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+      const result: any = await Promise.race([
+        supabase.functions.invoke("verify-report-image", { body: { image: b64, mimeType: "image/jpeg" } }),
+        new Promise((r) => setTimeout(() => r(null), 10000)),
+      ]);
+      const data = result?.data;
+      if (!result || result.error || !data || data.error || data.bypassed) { pause(); return { ok: true }; }
+      if (!data.is_authentic || data.is_ai_generated) return { ok: false, reason: data.reason };
+      return { ok: true };
+    } catch { pause(); return { ok: true }; }
+  };
+
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
+    setVerifying(true);
+    const verdict = await verifyPhoto(file);
+    setVerifying(false);
+    if (!verdict.ok) {
+      toast({
+        title: "Fake image detected",
+        description: `${verdict.reason || "This image looks AI-generated or not genuine."} Please take a real photo on site.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const preview = URL.createObjectURL(file);
     setPhoto({ file, preview });
     try {
@@ -269,6 +313,11 @@ const HazardPage = () => {
           className="hidden"
           onChange={handlePhotoCapture}
         />
+        {verifying && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Checking photo is genuine…
+          </div>
+        )}
         {photo ? (
           <div className="relative overflow-hidden rounded-xl border border-border">
             <img src={photo.preview} alt="Hazard" className="h-48 w-full object-cover" />
