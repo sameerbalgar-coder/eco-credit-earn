@@ -15,8 +15,6 @@ const PROMPT = `You are an anti-fraud checker for a civic issue reporting app in
 Decide if this image is a GENUINE real-world camera photo, or if it is AI-generated, digitally rendered, an illustration/cartoon, a stock/watermarked image, or a photo of a screen. Low quality, blur, night shots or messy framing are normal for genuine phone photos — do not flag them.
 Also say whether it shows any of the civic issues above, and which category.
 Reply ONLY with JSON: {"is_authentic": boolean, "is_ai_generated": boolean, "shows_issue": boolean, "issue_category": "waste|road|tree_fall|electrical|spill|structure|other_hazard|none", "confidence": number 0-1, "reason": "short sentence"}`;
-const _UNUSED = `
-Reply ONLY with JSON: {"is_authentic": boolean, "is_ai_generated": boolean, "shows_waste": boolean, "confidence": number 0-1, "reason": "short sentence"}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
