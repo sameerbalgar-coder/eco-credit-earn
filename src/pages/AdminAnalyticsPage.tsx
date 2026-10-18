@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AiUsageCard from "@/components/AiUsageCard";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, BarChart3, TrendingUp, MapPin, AlertTriangle, Loader2 } from "lucide-react";
 
@@ -54,6 +55,7 @@ const AdminAnalyticsPage = () => {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       ) : (
         <>
+          <AiUsageCard />
           {/* Overview */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-border bg-card p-4 text-center">

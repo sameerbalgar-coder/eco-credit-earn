@@ -15,6 +15,13 @@
       "when": 1791916194529,
       "tag": "0001_fix_demo_email_match",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792332923137,
+      "tag": "0002_ai_usage_logs",
+      "breakpoints": true
     }
   ]
 }
