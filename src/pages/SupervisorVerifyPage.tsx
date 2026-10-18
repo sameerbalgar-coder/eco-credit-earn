@@ -51,26 +51,33 @@ const SupervisorVerifyPage = () => {
 
   const handleAction = async (reportId: string, reporterId: string, action: "assigned" | "rejected", wasteType?: string, quantityKg?: number | null) => {
     try {
-      await supabase.from("waste_reports").update({ status: action } as any).eq("id", reportId);
-
-      const delta = action === "assigned" ? 5 : -3;
-      const current = reporters[reporterId]?.credibility_score ?? 50;
-      await supabase.from("profiles").update({ credibility_score: Math.max(0, Math.min(100, current + delta)) } as any).eq("id", reporterId);
-
       if (action === "assigned") {
         const qty = quantityKg ?? 1;
         const baseCredits = Math.max(10, Math.round(qty * 15));
         const co2Kg = Math.round(qty * 2.5 * 10) / 10;
-        const desc = `Report verified: ${wasteType ?? "waste"} (${qty}kg)`;
-        const { error: rpcError } = await (supabase.rpc as any)("award_carbon_credits", {
-          p_user_id: reporterId,
-          p_amount: baseCredits,
-          p_transaction_type: "report_verified",
-          p_description: desc,
-          p_related_report_id: reportId,
+        const { error: rpcError } = await (supabase.rpc as any)("verify_completed_report", {
+          p_report_id: reportId,
+          p_supervisor_id: user!.id,
+          p_credits_awarded: baseCredits,
           p_co2_kg: co2Kg,
         });
-        if (rpcError) console.error("Credit award failed:", rpcError.message);
+        if (rpcError) {
+          // Fallback: direct update + award_carbon_credits
+          await supabase.from("waste_reports").update({ status: "assigned" } as any).eq("id", reportId);
+          await (supabase.rpc as any)("award_carbon_credits", {
+            p_user_id: reporterId,
+            p_amount: baseCredits,
+            p_transaction_type: "report_verified",
+            p_description: `Report verified: ${wasteType ?? "waste"} (${qty}kg)`,
+            p_related_report_id: reportId,
+            p_co2_kg: co2Kg,
+          });
+        }
+      } else {
+        await supabase.from("waste_reports").update({ status: "rejected" } as any).eq("id", reportId);
+        const delta = -3;
+        const current = reporters[reporterId]?.credibility_score ?? 50;
+        await supabase.from("profiles").update({ credibility_score: Math.max(0, Math.min(100, current + delta)) } as any).eq("id", reporterId);
       }
 
       setReports(prev => prev.filter(r => r.id !== reportId));

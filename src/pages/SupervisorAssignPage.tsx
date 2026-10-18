@@ -202,37 +202,60 @@ const SupervisorAssignPage = () => {
     setAssigning(false);
   };
 
-  const handleReview = async (report: Report, action: "verify" | "flag_fake", reason?: string) => {
+  const handleVerify = async (report: Report) => {
+    if (!user) return;
     const task = taskByReport[report.id];
     if (!task) return;
     setReviewing(true);
-    const verifiedWeight = task.weight_kg ?? null;
+    const weight = task.weight_kg ?? 1;
+    const co2Kg = Math.round(weight * 1.5 * 10) / 10;
     const { data, error } = await supabase.rpc("verify_completed_report" as any, {
       p_report_id: report.id,
-      p_action: action,
-      p_verified_weight: verifiedWeight,
-      p_reason: reason ?? null,
+      p_supervisor_id: user.id,
+      p_credits_awarded: 20,
+      p_co2_kg: co2Kg,
     });
 
     if (error) {
       setReviewing(false);
-      toast({ title: "Review could not be completed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Verification failed", description: "Please try again.", variant: "destructive" });
       return;
     }
 
     const result = data as { status?: string; credits_awarded?: number; already_verified?: boolean } | null;
     setReviewing(false);
     setProofTask(null);
+    await refetch();
+
+    toast({
+      title: result?.already_verified ? "Already verified" : "Cleanup verified",
+      description: `${result?.credits_awarded ?? 20} carbon credits released to the reporting citizen.`,
+    });
+  };
+
+  const handleFlagFake = async (report: Report, reason: string) => {
+    if (!user) return;
+    setReviewing(true);
+    const { error } = await supabase
+      .from("waste_reports")
+      .update({
+        status: "rejected" as any,
+        is_flagged: true,
+        flag_reason: reason,
+        flagged_by: user.id,
+        verification_status: "rejected",
+      })
+      .eq("id", report.id);
+
+    setReviewing(false);
+    setProofTask(null);
     setFlagFor(null);
     setFlagDetails("");
     await refetch();
 
-    if (action === "verify") {
-      toast({
-        title: result?.already_verified ? "Already verified" : "Cleanup verified",
-        description: `${result?.credits_awarded ?? 0} carbon credits released to the reporting citizen.`,
-      });
-    } else {
+    if (error) {
+      toast({ title: "Flagging failed", description: "Please try again.", variant: "destructive" });
+      } else {
       toast({ title: "Report flagged as fake", description: "No carbon credits were released." });
     }
   };
@@ -646,7 +669,7 @@ const SupervisorAssignPage = () => {
                 </div>
               ) : (
                 <button
-                  onClick={() => handleReview(proofTask.report, "verify")}
+                  onClick={() => handleVerify(proofTask.report)}
                   disabled={reviewing}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                 >
@@ -709,7 +732,7 @@ const SupervisorAssignPage = () => {
             <div className="mt-4 flex gap-2">
               <button onClick={() => setFlagFor(null)} disabled={reviewing} className="flex-1 rounded-xl border border-border p-3 text-sm font-semibold text-foreground">Cancel</button>
               <button
-                onClick={() => handleReview(flagFor.report, "flag_fake", `${flagReason}${flagDetails.trim() ? `: ${flagDetails.trim()}` : ""}`)}
+                onClick={() => handleFlagFake(flagFor.report, `${flagReason}${flagDetails.trim() ? `: ${flagDetails.trim()}` : ""}`)}
                 disabled={reviewing}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive p-3 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
               >
