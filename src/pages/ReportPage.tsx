@@ -1,4 +1,22 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+const compressToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 640;
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s);
+      c.height = Math.round(img.height * s);
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.7).split(",")[1]);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 import {
   Camera,
   MapPin,
@@ -78,6 +96,11 @@ const ReportPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [manualAddress, setManualAddress] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [fakeWarning, setFakeWarning] = useState<string | null>(null);
+  const [verifiedCount, setVerifiedCount] = useState(0);
+  const [nearby, setNearby] = useState<{ id: string; waste_type: string; status: string; upvote_count: number; distance_m: number } | null>(null);
+  const [duplicateResult, setDuplicateResult] = useState<"wip" | "boosted" | null>(null);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -105,12 +128,56 @@ const ReportPage = () => {
     }
   });
 
+  // Nearby duplicate check (database only, no AI cost)
+  useEffect(() => {
+    if (!location) { setNearby(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc("find_nearby_reports" as any, {
+        p_lat: location.lat, p_lng: location.lng, p_radius_m: 75,
+      });
+      if (!cancelled) setNearby(((data as any[]) ?? [])[0] ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [location?.lat, location?.lng]);
+
+  const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string }> => {
+    try {
+      const b64 = await compressToBase64(file);
+      const { data, error } = await supabase.functions.invoke("verify-report-image", {
+        body: { image: b64, mimeType: "image/jpeg" },
+      });
+      if (error || !data || data.error) {
+        // AI unavailable / rate limited: allow, supervisors still review
+        return { ok: true, reason: "unchecked" };
+      }
+      if (!data.is_authentic || data.is_ai_generated) return { ok: false, reason: data.reason };
+      return { ok: true };
+    } catch {
+      return { ok: true, reason: "unchecked" };
+    }
+  };
+
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     for (const file of Array.from(files)) {
+      setVerifying(true);
+      setFakeWarning(null);
+      const verdict = await verifyPhoto(file);
+      setVerifying(false);
+      if (!verdict.ok) {
+        setFakeWarning(verdict.reason || "This image looks AI-generated or not genuine.");
+        toast({
+          title: "Fake image detected",
+          description: "AI-generated or non-genuine photos cannot be reported. Please take a real photo on site.",
+          variant: "destructive",
+        });
+        continue;
+      }
       const preview = URL.createObjectURL(file);
       setPhotos((p) => [...p, { file, preview }]);
+      if (verdict.reason !== "unchecked") setVerifiedCount((n) => n + 1);
       try {
         const meta = await exifr.parse(file, { gps: true, pick: ["DateTimeOriginal", "CreateDate", "latitude", "longitude"] });
         if (meta?.latitude && meta?.longitude) {
