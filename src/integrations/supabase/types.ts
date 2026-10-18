@@ -527,6 +527,7 @@ export type Database = {
           address: string | null
           assigned_supervisor_id: string | null
           assigned_worker_id: string | null
+          captured_at: string | null
           created_at: string
           credits_awarded: number | null
           description: string | null
@@ -550,6 +551,7 @@ export type Database = {
           address?: string | null
           assigned_supervisor_id?: string | null
           assigned_worker_id?: string | null
+          captured_at?: string | null
           created_at?: string
           credits_awarded?: number | null
           description?: string | null
@@ -573,6 +575,7 @@ export type Database = {
           address?: string | null
           assigned_supervisor_id?: string | null
           assigned_worker_id?: string | null
+          captured_at?: string | null
           created_at?: string
           credits_awarded?: number | null
           description?: string | null

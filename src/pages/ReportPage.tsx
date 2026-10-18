@@ -17,6 +17,89 @@ const compressToBase64 = (file: File): Promise<string> =>
     img.onerror = reject;
     img.src = url;
   });
+
+/**
+ * Draw a date/time + location watermark on the bottom-right of the image.
+ * Returns a new File (JPEG) with the watermark baked in.
+ */
+const watermarkImage = async (
+  file: File,
+  lat: number | null,
+  lng: number | null,
+  capturedAt: Date
+): Promise<File> => {
+  const img = new window.Image();
+  const url = URL.createObjectURL(file);
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = reject;
+    img.src = url;
+  });
+
+  const max = 1280;
+  const scale = Math.min(1, max / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0, w, h);
+  URL.revokeObjectURL(url);
+
+  const pad = Math.max(6, Math.round(h * 0.012));
+  const fontPx = Math.max(11, Math.round(h * 0.022));
+
+  const dateStr = capturedAt.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const timeStr = capturedAt.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const locStr =
+    lat !== null && lng !== null
+      ? `${Math.abs(lat).toFixed(4)} ${lat >= 0 ? "N" : "S"}, ${Math.abs(lng).toFixed(4)} ${lng >= 0 ? "E" : "W"}`
+      : "Location unavailable";
+
+  const line1 = `${dateStr} ${timeStr}`;
+  const line2 = locStr;
+  const lineHeight = Math.round(fontPx * 1.35);
+  const blockH = lineHeight * 2 + pad * 1.5;
+  const blockW =
+    Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width) + pad * 2;
+
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(w - blockW - pad, h - blockH - pad, blockW, blockH);
+
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = `600 ${fontPx}px system-ui, -apple-system, sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(line1, w - blockW - pad + pad * 0.5, h - blockH - pad + pad * 0.4);
+  ctx.fillText(line2, w - blockW - pad + pad * 0.5, h - blockH - pad + pad * 0.4 + lineHeight);
+
+  const blob: Blob = await new Promise((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.85)
+  );
+  const name = file.name.replace(/\.[^.]+$/, "") + "_wm.jpg";
+  return new File([blob], name, { type: "image/jpeg" });
+};
+
+const getCurrentLocation = (): Promise<{ lat: number; lng: number } | null> =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  });
+
 import {
   Camera,
   MapPin,
@@ -78,6 +161,14 @@ const wasteCategories = [
   { id: "mixed", label: "Mixed", icon: "🗑️" },
 ];
 
+type PhotoEntry = {
+  file: File;
+  preview: string;
+  lat: number | null;
+  lng: number | null;
+  capturedAt: Date;
+};
+
 const ReportPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -87,7 +178,7 @@ const ReportPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
-  const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
+  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState("Detecting location...");
   const [capturedAt, setCapturedAt] = useState<Date | null>(null);
@@ -97,6 +188,7 @@ const ReportPage = () => {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [manualAddress, setManualAddress] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [watermarking, setWatermarking] = useState(false);
   const [fakeWarning, setFakeWarning] = useState<string | null>(null);
   const [verifiedCount, setVerifiedCount] = useState(0);
   const [nearby, setNearby] = useState<{ id: string; waste_type: string; status: string; upvote_count: number; distance_m: number } | null>(null);
@@ -144,7 +236,6 @@ const ReportPage = () => {
   }, [location?.lat, location?.lng]);
 
   const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string }> => {
-    // Circuit breaker: skip AI for 3 min after quota/outage
     const until = Number(sessionStorage.getItem("ai_check_paused_until") || 0);
     if (Date.now() < until) return { ok: true, reason: "unchecked" };
     const pause = () => sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
@@ -185,21 +276,73 @@ const ReportPage = () => {
         });
         continue;
       }
-      const preview = URL.createObjectURL(file);
-      setPhotos((p) => [...p, { file, preview }]);
-      if (verdict.reason !== "unchecked") setVerifiedCount((n) => n + 1);
+
+      setWatermarking(true);
       try {
-        const meta = await exifr.parse(file, { gps: true, pick: ["DateTimeOriginal", "CreateDate", "latitude", "longitude"] });
-        if (meta?.latitude && meta?.longitude) {
-          setLocation({ lat: meta.latitude, lng: meta.longitude });
-          setAddress(`${meta.latitude.toFixed(4)}, ${meta.longitude.toFixed(4)} (from photo)`);
-          setExifSource(true);
+        // 1. Parse EXIF for GPS + timestamp
+        let exifLat: number | null = null;
+        let exifLng: number | null = null;
+        let shotAt: Date | null = null;
+        try {
+          const meta = await exifr.parse(file, {
+            gps: true,
+            pick: ["DateTimeOriginal", "CreateDate", "latitude", "longitude"],
+          });
+          if (meta?.latitude && meta?.longitude) {
+            exifLat = meta.latitude;
+            exifLng = meta.longitude;
+          }
+          const exifDate = meta?.DateTimeOriginal || meta?.CreateDate;
+          if (exifDate) shotAt = new Date(exifDate);
+        } catch {
+          // EXIF unavailable — continue with fallbacks
         }
-        const shotAt = meta?.DateTimeOriginal || meta?.CreateDate;
-        if (shotAt) setCapturedAt(new Date(shotAt));
-        else if (!capturedAt) setCapturedAt(new Date(file.lastModified || Date.now()));
+
+        // 2. Fallback to Geolocation API if no EXIF GPS
+        let photoLat = exifLat;
+        let photoLng = exifLng;
+        if (photoLat === null || photoLng === null) {
+          const geo = await getCurrentLocation();
+          if (geo) {
+            photoLat = geo.lat;
+            photoLng = geo.lng;
+          }
+        }
+
+        // 3. Determine capture timestamp
+        const captureTime = shotAt ?? new Date(file.lastModified || Date.now());
+
+        // 4. Update location state if we now have coordinates
+        if (photoLat !== null && photoLng !== null) {
+          setLocation({ lat: photoLat, lng: photoLng });
+          const fromPhoto = exifLat !== null;
+          setAddress(`${photoLat.toFixed(4)}, ${photoLng.toFixed(4)}${fromPhoto ? " (from photo)" : ""}`);
+          setExifSource(fromPhoto);
+        }
+
+        if (!capturedAt) setCapturedAt(captureTime);
+
+        // 5. Watermark the image with date, time, and location
+        const watermarked = await watermarkImage(file, photoLat, photoLng, captureTime);
+        const preview = URL.createObjectURL(watermarked);
+
+        setPhotos((p) => [
+          ...p,
+          { file: watermarked, preview, lat: photoLat, lng: photoLng, capturedAt: captureTime },
+        ]);
+        if (verdict.reason !== "unchecked") setVerifiedCount((n) => n + 1);
       } catch {
-        setCapturedAt((c) => c ?? new Date(file.lastModified || Date.now()));
+        // If watermarking fails, use the original file
+        const preview = URL.createObjectURL(file);
+        const fallbackTime = new Date(file.lastModified || Date.now());
+        setPhotos((p) => [
+          ...p,
+          { file, preview, lat: null, lng: null, capturedAt: fallbackTime },
+        ]);
+        if (!capturedAt) setCapturedAt(fallbackTime);
+        if (verdict.reason !== "unchecked") setVerifiedCount((n) => n + 1);
+      } finally {
+        setWatermarking(false);
       }
     }
   };
@@ -235,7 +378,7 @@ const ReportPage = () => {
         setDuplicateResult("boosted");
         return;
       }
-      // Upload photos to storage
+      // Upload watermarked photos to storage
       const photoUrls: string[] = [];
       for (const photo of photos) {
         const fileName = `${user.id}/${Date.now()}-${photo.file.name}`;
@@ -247,17 +390,20 @@ const ReportPage = () => {
         }
       }
 
+      // Use the first photo's capture time as the report's captured_at
+      const reportCapturedAt = photos[0]?.capturedAt ?? capturedAt ?? new Date();
 
       // Create waste report
       const { error } = await supabase.from("waste_reports").insert({
         reporter_id: user.id,
         waste_type: selectedCategory,
-        description: [description, capturedAt ? `📷 Captured: ${capturedAt.toISOString()}` : null].filter(Boolean).join(" | "),
+        description,
         quantity_kg: quantity ? parseFloat(quantity) : null,
         latitude: location?.lat ?? null,
         longitude: location?.lng ?? null,
         address,
         photo_urls: photoUrls,
+        captured_at: reportCapturedAt.toISOString(),
       } as any);
 
       if (error) throw error;
@@ -342,14 +488,19 @@ const ReportPage = () => {
           🔍 Verifying photo authenticity with AI...
         </div>
       )}
+      {watermarking && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-primary animate-pulse">
+          📍 Embedding location & timestamp watermark...
+        </div>
+      )}
       {fakeWarning && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
           ⚠️ <strong>Fake image detected.</strong> AI-generated or non-genuine photos cannot be reported. {fakeWarning}
         </div>
       )}
-      {!verifying && verifiedCount > 0 && !fakeWarning && (
+      {!verifying && !watermarking && verifiedCount > 0 && !fakeWarning && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-primary">
-          ✅ Verified authentic photo
+          ✅ Verified authentic photo · watermarked with location & time
         </div>
       )}
       {nearbyBanner}
@@ -364,8 +515,14 @@ const ReportPage = () => {
       />
       <div className="grid grid-cols-3 gap-3">
         {photos.map((p, i) => (
-          <div key={i} className="aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+          <div key={i} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             <img src={p.preview} alt="" className="h-full w-full object-cover" />
+            <div className="absolute bottom-0 right-0 bg-black/55 px-1.5 py-0.5 text-[7px] font-semibold text-white/95 leading-tight max-w-full">
+              {p.capturedAt.toLocaleDateString()} {p.capturedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {p.lat !== null && p.lng !== null && (
+                <div className="truncate">{p.lat.toFixed(3)} {p.lat >= 0 ? "N" : "S"}, {p.lng.toFixed(3)} {p.lng >= 0 ? "E" : "W"}</div>
+              )}
+            </div>
           </div>
         ))}
         <button
@@ -537,6 +694,12 @@ const ReportPage = () => {
           <span className="text-muted-foreground">Location</span>
           <span className="font-medium text-foreground text-right max-w-[180px] truncate">{address}</span>
         </div>
+        {capturedAt && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Captured</span>
+            <span className="font-medium text-foreground">{capturedAt.toLocaleString()}</span>
+          </div>
+        )}
       </div>
       <p className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
         ℹ️ Credits will be released <strong>only after</strong> verified collection
@@ -569,7 +732,7 @@ const ReportPage = () => {
           <Button
             onClick={() => setStep(step + 1)}
             className="w-full rounded-xl py-6 text-sm font-semibold"
-            disabled={step === 0 && (photos.length === 0 || verifying)}
+            disabled={step === 0 && (photos.length === 0 || verifying || watermarking)}
           >
             Continue <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
