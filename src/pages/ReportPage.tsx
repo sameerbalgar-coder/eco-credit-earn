@@ -133,27 +133,37 @@ const ReportPage = () => {
     if (!location) { setNearby(null); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc("find_nearby_reports" as any, {
-        p_lat: location.lat, p_lng: location.lng, p_radius_m: 75,
-      });
-      if (!cancelled) setNearby(((data as any[]) ?? [])[0] ?? null);
+      try {
+        const { data } = await supabase.rpc("find_nearby_reports" as any, {
+          p_lat: location.lat, p_lng: location.lng, p_radius_m: 75,
+        });
+        if (!cancelled) setNearby(((data as any[]) ?? [])[0] ?? null);
+      } catch { if (!cancelled) setNearby(null); }
     })();
     return () => { cancelled = true; };
   }, [location?.lat, location?.lng]);
 
   const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string }> => {
+    // Circuit breaker: skip AI for 3 min after quota/outage
+    const until = Number(sessionStorage.getItem("ai_check_paused_until") || 0);
+    if (Date.now() < until) return { ok: true, reason: "unchecked" };
+    const pause = () => sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
     try {
       const b64 = await compressToBase64(file);
-      const { data, error } = await supabase.functions.invoke("verify-report-image", {
-        body: { image: b64, mimeType: "image/jpeg" },
-      });
-      if (error || !data || data.error) {
-        // AI unavailable / rate limited: allow, supervisors still review
+      const timeout = new Promise<null>((res) => setTimeout(() => res(null), 10000));
+      const result: any = await Promise.race([
+        supabase.functions.invoke("verify-report-image", { body: { image: b64, mimeType: "image/jpeg" } }),
+        timeout,
+      ]);
+      const data = result?.data;
+      if (!result || result.error || !data || data.error || data.bypassed) {
+        pause();
         return { ok: true, reason: "unchecked" };
       }
       if (!data.is_authentic || data.is_ai_generated) return { ok: false, reason: data.reason };
       return { ok: true };
     } catch {
+      pause();
       return { ok: true, reason: "unchecked" };
     }
   };
