@@ -1,4 +1,4 @@
 # Recovery verification
-- [ ] Simulate startup failure, slow loading, and React crash.
-- [ ] Fix recovery paths and preserve sessions except explicit clearing.
-- [ ] Run regression tests and verify recovery buttons in the browser.
+- [x] Simulate startup failure, slow loading, and React crash.
+- [x] Fix recovery paths and preserve sessions except explicit clearing.
+- [x] Run regression tests and verify recovery buttons in the browser.
