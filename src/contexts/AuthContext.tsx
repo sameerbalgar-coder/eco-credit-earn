@@ -115,23 +115,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Always start at the login page: clear any stored session on fresh app load,
-    // except when arriving via a password-recovery link (needs its session).
-    const isRecovery = window.location.hash.includes("type=recovery");
-    if (!isRecovery) {
-      supabase.auth.signOut().finally(() => {
-        applySession(null);
-      });
-    } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+    // Recovery/reload must not revoke the user's stored session.
+    let active = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!active) return;
         applySession(session);
         if (session?.user) {
           void fetchProfile(session.user.id);
         }
+      }).catch(() => {
+        if (active) setLoading(false);
       });
-    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, displayName: string, role: AppRole) => {

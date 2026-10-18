@@ -21,7 +21,7 @@
   </head>
 
   <body>
-    <div id="root">
+    <div id="root"></div>
       <div id="boot-fallback" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:system-ui,sans-serif;background:#f6f5ef;color:#4a5340;text-align:center;padding:24px">
         <div style="width:36px;height:36px;border:3px solid #8a9a6b;border-top-color:transparent;border-radius:50%;animation:bootspin 0.9s linear infinite"></div>
         <p style="margin:0;font-weight:600">EcoCredit is loading…</p>
@@ -31,7 +31,6 @@
         </div>
       </div>
       <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
-    </div>
     <script>
       (function () {
         function showRecover() {
@@ -40,6 +39,7 @@
         }
         setTimeout(function () { if (!window.__APP_MOUNTED__) showRecover(); }, 8000);
         window.addEventListener("error", function () { if (!window.__APP_MOUNTED__) showRecover(); }, true);
+        window.addEventListener("unhandledrejection", function () { if (!window.__APP_MOUNTED__) showRecover(); });
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 type State = { error: Error | null };
 
@@ -29,7 +30,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
+              onClick={async () => {
+                // Explicit opt-in only; notify preview storage too.
+                try { await supabase.auth.signOut({ scope: "local" }); } catch { /* still allow local recovery */ }
                 try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignore */ }
                 window.location.href = "/auth";
               }}
