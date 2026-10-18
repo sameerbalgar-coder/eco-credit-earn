@@ -214,6 +214,17 @@ const ReportPage = () => {
     }
     setSubmitting(true);
     try {
+      // Duplicate handling: same area already reported
+      if (nearby) {
+        if (nearby.status === "in_progress") {
+          setDuplicateResult("wip");
+          return;
+        }
+        const { error: escErr } = await supabase.rpc("escalate_report" as any, { p_report_id: nearby.id });
+        if (escErr) throw escErr;
+        setDuplicateResult("boosted");
+        return;
+      }
       // Upload photos to storage
       const photoUrls: string[] = [];
       for (const photo of photos) {
@@ -266,6 +277,25 @@ const ReportPage = () => {
     }
   };
 
+  if (duplicateResult) {
+    return (
+      <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 text-center animate-fade-in">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle2 className="h-10 w-10 text-primary" />
+        </div>
+        <h2 className="mt-4 text-xl font-bold text-foreground">
+          {duplicateResult === "wip" ? "Work in progress" : "Priority boosted!"}
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {duplicateResult === "wip"
+            ? "A cleanup team is already working at this spot. Thanks for checking!"
+            : "This spot was already reported. We raised its priority level so it gets cleaned faster."}
+        </p>
+        <Button className="mt-6 rounded-xl" onClick={() => navigate("/")}>Back to home</Button>
+      </div>
+    );
+  }
+
   if (submitted) {
     return (
       <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 animate-fade-in">
@@ -280,11 +310,39 @@ const ReportPage = () => {
     );
   }
 
+  const nearbyBanner = nearby ? (
+    nearby.status === "in_progress" ? (
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+        🚧 <strong>Work in progress</strong> — a {nearby.waste_type} report ~{Math.round(nearby.distance_m)} m away is already being cleaned. No new report needed.
+      </div>
+    ) : (
+      <div className="rounded-xl border border-accent bg-accent/30 p-3 text-xs text-foreground">
+        📍 <strong>Already reported nearby</strong> (~{Math.round(nearby.distance_m)} m, priority level {nearby.upvote_count}). Submitting will boost its priority instead of creating a duplicate.
+      </div>
+    )
+  ) : null;
+
   const steps = [
     // Step 0: Photo
     <div key="photo" className="space-y-4 animate-fade-in">
       <h2 className="text-lg font-bold text-foreground">Take Photos</h2>
       <p className="text-sm text-muted-foreground">Upload clear photos of the waste</p>
+      {verifying && (
+        <div className="rounded-xl border border-border bg-muted/50 p-3 text-xs text-muted-foreground animate-pulse">
+          🔍 Verifying photo authenticity with AI...
+        </div>
+      )}
+      {fakeWarning && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          ⚠️ <strong>Fake image detected.</strong> AI-generated or non-genuine photos cannot be reported. {fakeWarning}
+        </div>
+      )}
+      {!verifying && verifiedCount > 0 && !fakeWarning && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-primary">
+          ✅ Verified authentic photo
+        </div>
+      )}
+      {nearbyBanner}
       <input
         ref={fileInputRef}
         type="file"
