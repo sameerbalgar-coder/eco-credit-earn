@@ -313,6 +313,11 @@ const HazardPage = () => {
           className="hidden"
           onChange={handlePhotoCapture}
         />
+        {verifying && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Checking photo is genuine…
+          </div>
+        )}
         {photo ? (
           <div className="relative overflow-hidden rounded-xl border border-border">
             <img src={photo.preview} alt="Hazard" className="h-48 w-full object-cover" />
