@@ -669,6 +669,19 @@ export type Database = {
         }
         Returns: number
       }
+      escalate_report: { Args: { p_report_id: string }; Returns: Json }
+      find_nearby_reports: {
+        Args: { p_lat: number; p_lng: number; p_radius_m?: number }
+        Returns: {
+          address: string
+          created_at: string
+          distance_m: number
+          id: string
+          status: Database["public"]["Enums"]["report_status"]
+          upvote_count: number
+          waste_type: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
