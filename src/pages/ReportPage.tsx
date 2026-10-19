@@ -281,11 +281,10 @@ const ReportPage = () => {
       // AI auto-fill: only fill empty fields so citizen edits are never overwritten
       const sg = verdict.suggestion;
       if (sg) {
-        let filled = false;
-        if (sg.waste_type) { setSelectedCategory((c) => { if (c) return c; filled = true; return sg.waste_type; }); }
-        if (sg.estimated_kg) { setQuantity((q) => { if (q) return q; filled = true; return String(sg.estimated_kg); }); }
-        if (sg.description) { setDescription((d) => { if (d) return d; filled = true; return sg.description; }); }
-        setTimeout(() => { if (filled) setAiFilled(true); }, 0);
+        if (sg.waste_type) { setSelectedCategory((c) => { return c || sg.waste_type; }); }
+        if (sg.estimated_kg) { setQuantity((q) => { return q || String(sg.estimated_kg); }); }
+        if (sg.description) { setDescription((d) => { return d || sg.description; }); }
+        if (sg.waste_type || sg.estimated_kg || sg.description) setAiFilled(true);
       }
 
       setWatermarking(true);
