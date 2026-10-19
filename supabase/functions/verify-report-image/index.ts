@@ -14,7 +14,8 @@ const PROMPT = `You are an anti-fraud checker for a civic issue reporting app in
 - other_hazard: any other public safety risk
 Decide if this image is a GENUINE real-world camera photo, or if it is AI-generated, digitally rendered, an illustration/cartoon, a stock/watermarked image, or a photo of a screen. Low quality, blur, night shots or messy framing are normal for genuine phone photos — do not flag them.
 Also say whether it shows any of the civic issues above, and which category.
-Reply ONLY with JSON: {"is_authentic": boolean, "is_ai_generated": boolean, "shows_issue": boolean, "issue_category": "waste|road|tree_fall|electrical|spill|structure|other_hazard|none", "confidence": number 0-1, "reason": "short sentence"}`;
+Reply ONLY with JSON: {"is_authentic": boolean, "is_ai_generated": boolean, "shows_issue": boolean, "issue_category": "waste|road|tree_fall|electrical|spill|structure|other_hazard|none", "confidence": number 0-1, "reason": "short sentence", "waste_type": "plastic|organic|ewaste|metal|glass|paper|hazardous|mixed", "estimated_kg": number, "description": "one short sentence describing what is visible"}
+For waste_type: use "hazardous" for non-garbage hazards (road, tree, electrical, spill, structure), otherwise the dominant waste material.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -76,6 +77,11 @@ Deno.serve(async (req) => {
       issue_category: String(v.issue_category ?? "none").slice(0, 30),
       confidence: Number(v.confidence) || 0,
       reason: String(v.reason ?? "").slice(0, 200),
+      suggestion: {
+        waste_type: ["plastic","organic","ewaste","metal","glass","paper","hazardous","mixed"].includes(v.waste_type) ? v.waste_type : null,
+        estimated_kg: Number.isFinite(Number(v.estimated_kg)) && Number(v.estimated_kg) > 0 ? Math.min(1000, Math.round(Number(v.estimated_kg))) : null,
+        description: typeof v.description === "string" ? v.description.slice(0, 200) : null,
+      },
     });
   } catch (e) {
     console.error(e);
