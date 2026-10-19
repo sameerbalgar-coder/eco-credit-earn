@@ -74,6 +74,29 @@ const SupervisorAssignPage = () => {
   const [flagDetails, setFlagDetails] = useState("");
   const [reviewing, setReviewing] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [aiProof, setAiProof] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    const t = proofTask?.task;
+    if (!t || !t.before_photo_url || !t.after_photo_url || aiProof[t.id]) return;
+    const key = `ai_cleanup_${t.id}`;
+    const cached = sessionStorage.getItem(key);
+    if (cached) { try { setAiProof((p) => ({ ...p, [t.id]: JSON.parse(cached) })); return; } catch { /* ignore */ } }
+    if (Date.now() < Number(sessionStorage.getItem("ai_check_paused_until") || 0)) { setAiProof((p) => ({ ...p, [t.id]: { bypassed: true } })); return; }
+    setAiProof((p) => ({ ...p, [t.id]: { loading: true } }));
+    (async () => {
+      let res: any = { bypassed: true };
+      try {
+        const r: any = await Promise.race([
+          supabase.functions.invoke("verify-cleanup-proof", { body: { task_id: t.id } }),
+          new Promise((ok) => setTimeout(() => ok(null), 15000)),
+        ]);
+        if (r?.data && !r.error && !r.data.error && !r.data.bypassed) { res = r.data; sessionStorage.setItem(key, JSON.stringify(res)); }
+        else if (r?.data?.reason !== "missing_photos") sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
+      } catch { /* bypass */ }
+      setAiProof((p) => ({ ...p, [t.id]: res }));
+    })();
+  }, [proofTask?.task.id]);
 
   const refetch = async () => {
     const [{ data: rData }, { data: tData }] = await Promise.all([
@@ -615,6 +638,25 @@ const SupervisorAssignPage = () => {
                 )}
               </div>
             </div>
+
+            {(() => {
+              const ai = aiProof[proofTask.task.id];
+              if (!ai) return null;
+              if (ai.loading) return <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 p-2.5 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> AI is comparing before & after...</div>;
+              if (ai.bypassed) return <div className="mt-3 rounded-lg bg-muted/50 p-2.5 text-xs text-muted-foreground">AI check unavailable right now — please review the photos manually.</div>;
+              const good = ai.cleanup_score >= 70 && ai.same_location && !ai.suspicious;
+              return (
+                <div className={`mt-3 rounded-lg border p-3 ${good ? "border-eco-success/30 bg-eco-success/5" : "border-eco-warning/30 bg-eco-warning/5"}`}>
+                  <p className="text-xs font-semibold text-foreground">✨ AI Analysis: {ai.cleanup_score}% cleaned</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ai.same_location ? "bg-eco-success/10 text-eco-success" : "bg-eco-warning/10 text-eco-warning"}`}>{ai.same_location ? "Location confirmed" : "Location mismatch"}</span>
+                    {ai.suspicious && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">Looks suspicious</span>}
+                  </div>
+                  {ai.summary && <p className="mt-1.5 text-xs text-muted-foreground">{ai.summary}</p>}
+                  <p className="mt-1 text-[10px] text-muted-foreground">Advisory only — your decision is final.</p>
+                </div>
+              );
+            })()}
 
             <div className="mt-4 space-y-2">
               {proofTask.task.weight_kg != null && (
