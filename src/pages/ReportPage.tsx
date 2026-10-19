@@ -192,6 +192,7 @@ const ReportPage = () => {
   const [fakeWarning, setFakeWarning] = useState<string | null>(null);
   const [verifiedCount, setVerifiedCount] = useState(0);
   const [nearby, setNearby] = useState<{ id: string; waste_type: string; status: string; upvote_count: number; distance_m: number } | null>(null);
+  const [aiFilled, setAiFilled] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<"wip" | "boosted" | null>(null);
 
   const useMyLocation = () => {
@@ -235,7 +236,7 @@ const ReportPage = () => {
     return () => { cancelled = true; };
   }, [location?.lat, location?.lng]);
 
-  const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string }> => {
+  const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string; suggestion?: any }> => {
     const until = Number(sessionStorage.getItem("ai_check_paused_until") || 0);
     if (Date.now() < until) return { ok: true, reason: "unchecked" };
     const pause = () => sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
@@ -252,7 +253,7 @@ const ReportPage = () => {
         return { ok: true, reason: "unchecked" };
       }
       if (!data.is_authentic || data.is_ai_generated) return { ok: false, reason: data.reason };
-      return { ok: true };
+      return { ok: true, suggestion: data.suggestion };
     } catch {
       pause();
       return { ok: true, reason: "unchecked" };
@@ -275,6 +276,15 @@ const ReportPage = () => {
           variant: "destructive",
         });
         continue;
+      }
+
+      // AI auto-fill: only fill empty fields so citizen edits are never overwritten
+      const sg = verdict.suggestion;
+      if (sg) {
+        if (sg.waste_type) { setSelectedCategory((c) => { return c || sg.waste_type; }); }
+        if (sg.estimated_kg) { setQuantity((q) => { return q || String(sg.estimated_kg); }); }
+        if (sg.description) { setDescription((d) => { return d || sg.description; }); }
+        if (sg.waste_type || sg.estimated_kg || sg.description) setAiFilled(true);
       }
 
       setWatermarking(true);
@@ -577,6 +587,13 @@ const ReportPage = () => {
         <h2 className="text-lg font-bold text-foreground">Details</h2>
         <p className="mt-1 text-sm text-muted-foreground">Add quantity and description</p>
       </div>
+      {aiFilled && (
+        <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+          <span className="text-sm">✨</span>
+          <p className="flex-1 text-xs text-foreground">AI suggested the type, weight and description from your photo. Please check and change anything that's wrong.</p>
+          <button type="button" aria-label="Dismiss" onClick={() => setAiFilled(false)} className="text-xs text-muted-foreground">✕</button>
+        </div>
+      )}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">Estimated Weight (kg)</label>
         <Input
