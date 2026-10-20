@@ -1,6 +1,9 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+// Models whose free daily allowance ran out (UTC date), so later photos skip them instantly.
+const exhausted = new Map<string, string>();
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -59,17 +62,22 @@ Deno.serve(async (req) => {
     // 404 (retired) and 429 (quota used) skip instantly; total time stays under the app's 30s wait.
     let r: Response | null = null;
     let sawQuota = false;
-    const deadline = Date.now() + 24000;
-    for (const model of ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash", "gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
+    const deadline = Date.now() + 25000;
+    const today = new Date().toISOString().slice(0, 10);
+    // Lite models have the largest free daily allowance, so try them first; skip models already used up today.
+    for (const model of ["gemini-flash-lite-latest", "gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.5-flash"]) {
+      if (exhausted.get(model) === today) { sawQuota = true; continue; }
       const left = deadline - Date.now();
-      if (left < 2000) break;
+      if (left < 3000) break;
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), Math.min(9000, left));
+      // Long wait: an abandoned request still uses up a free check.
+      const timer = setTimeout(() => ctrl.abort(), Math.min(15000, left));
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload, signal: ctrl.signal });
         if (res.ok) { r = res; break; }
-        if (res.status === 429) sawQuota = true;
+        if (res.status === 429) { sawQuota = true; exhausted.set(model, today); }
+        if (res.status === 404) exhausted.set(model, today);
         console.error("gemini", model, res.status);
         await res.body?.cancel().catch(() => {});
       } catch (e) { console.error("gemini fetch", model, String(e)); } finally { clearTimeout(timer); }
