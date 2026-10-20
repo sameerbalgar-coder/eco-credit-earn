@@ -35,6 +35,8 @@ const ReportHistoryPage = lazy(() => import("./pages/ReportHistoryPage"));
 const CommunityPage = lazy(() => import("./pages/CommunityPage"));
 const RecyclingPage = lazy(() => import("./pages/RecyclingPage"));
 const PickupsPage = lazy(() => import("./pages/PickupsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
 const StaffPickupsPage = lazy(() => import("./pages/StaffPickupsPage"));
 const PublicFeedPage = lazy(() => import("./pages/PublicFeedPage"));
 const WorkerDashboard = lazy(() => import("./pages/WorkerDashboard"));
@@ -115,6 +117,8 @@ const App = () => (
                       <Route path="/community" element={<CommunityPage />} />
                       <Route path="/recycling" element={<RecyclingPage />} />
                       <Route path="/pickups" element={<PickupsPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/help" element={<HelpPage />} />
                       <Route path="/staff/pickups" element={<StaffPickupsPage />} />
 
                       <Route path="/worker/task/:taskId" element={<WorkerTaskDetail />} />

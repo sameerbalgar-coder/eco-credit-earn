@@ -93,6 +93,8 @@ import {
   Image,
   Map as MapIcon,
   Crosshair,
+  X,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +162,22 @@ const ReportPage = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const selectedCategory = selectedCategories.length > 0 ? selectedCategories[0] : null;
+
+  const toggleCategory = (id: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      return updated.filter((_, i) => i !== index);
+    });
+  };
   const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
@@ -245,7 +262,7 @@ const ReportPage = () => {
       // AI auto-fill: only fill empty fields so citizen edits are never overwritten
       const sg = verdict.suggestion;
       if (sg) {
-        if (sg.waste_type) { setSelectedCategory((c) => { return c || sg.waste_type; }); }
+        if (sg.waste_type) { setSelectedCategories((prev) => prev.includes(sg.waste_type!) ? prev : [...prev, sg.waste_type!]); }
         if (sg.estimated_kg) { setQuantity((q) => { return q || String(sg.estimated_kg); }); }
         if (sg.description) { setDescription((d) => { return d || sg.description; }); }
         if (sg.waste_type || sg.estimated_kg || sg.description) setAiFilled(true);
@@ -367,7 +384,7 @@ const ReportPage = () => {
       // Create waste report
       const { error } = await supabase.from("waste_reports").insert({
         reporter_id: user.id,
-        waste_type: selectedCategory,
+        waste_type: selectedCategories.join(","),
         description,
         quantity_kg: quantity ? parseFloat(quantity) : null,
         latitude: location?.lat ?? null,
@@ -476,6 +493,13 @@ const ReportPage = () => {
         {photos.map((p, i) => (
           <div key={i} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
             <img src={p.preview} alt="" className="h-full w-full object-cover" />
+            <button
+              onClick={() => removePhoto(i)}
+              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-destructive"
+              aria-label="Remove photo"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
             <div className="absolute bottom-0 right-0 bg-black/55 px-1.5 py-0.5 text-[7px] font-semibold text-white/95 leading-tight max-w-full">
               {p.capturedAt.toLocaleDateString()} {p.capturedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               {p.lat !== null && p.lng !== null && (
@@ -512,22 +536,29 @@ const ReportPage = () => {
     <div key="category" className="space-y-4 animate-fade-in">
       <h2 className="text-lg font-bold text-foreground">Waste Category</h2>
       <p className="text-sm text-muted-foreground">Select the type of waste</p>
-      <div className="grid grid-cols-2 gap-3">
-        {wasteCategories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${
-              selectedCategory === cat.id
-                ? "border-primary bg-primary/5 eco-shadow"
-                : "border-border bg-card hover:border-primary/30"
-            }`}
-          >
-            <span className="text-2xl">{cat.icon}</span>
-            <span className="text-sm font-medium text-foreground">{cat.label}</span>
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2">
+        {wasteCategories.map((cat) => {
+          const selected = selectedCategories.includes(cat.id);
+          return (
+            <button
+              key={cat.id}
+              onClick={() => toggleCategory(cat.id)}
+              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
+                selected
+                  ? "border-primary bg-primary/10 text-primary eco-shadow"
+                  : "border-border bg-card text-foreground hover:border-primary/30"
+              }`}
+            >
+              {selected && <Check className="h-3.5 w-3.5" />}
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+            </button>
+          );
+        })}
       </div>
+      {selectedCategories.length > 0 && (
+        <p className="text-xs text-muted-foreground">{selectedCategories.length} categor{selectedCategories.length === 1 ? "y" : "ies"} selected</p>
+      )}
     </div>,
 
     // Step 2: Details
@@ -646,7 +677,7 @@ const ReportPage = () => {
       <div className="space-y-3 rounded-xl border border-border bg-card p-4">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Category</span>
-          <span className="font-medium text-foreground capitalize">{selectedCategory ?? "—"}</span>
+          <span className="font-medium text-foreground capitalize">{selectedCategories.length > 0 ? selectedCategories.join(", ") : "—"}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Quantity</span>

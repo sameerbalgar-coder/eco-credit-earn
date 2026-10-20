@@ -29,8 +29,8 @@ const ProfilePage = () => {
     { icon: BookOpen, label: "Materials Guide", desc: "Recycling info", to: "/materials" },
     { icon: Star, label: "My Reports", desc: "Report history", to: "/reports" },
     { icon: Shield, label: "Community Feed", desc: "Public reports", to: "/feed" },
-    { icon: Settings, label: "Settings", desc: "Preferences and language", to: "" },
-    { icon: HelpCircle, label: "Help & Support", desc: "FAQs and contact", to: "" },
+    { icon: Settings, label: "Settings", desc: "Preferences and language", to: "/settings" },
+    { icon: HelpCircle, label: "Help & Support", desc: "FAQs and contact", to: "/help" },
   ];
 
   return (

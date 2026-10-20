@@ -13,6 +13,9 @@ import {
   Camera,
   CheckCircle2,
   X,
+  Building2,
+  Recycle,
+  Globe,
 } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -103,6 +106,36 @@ const distanceKm = (a: { lat: number; lng: number }, b: { lat: number; lng: numb
 };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
+
+const mockRecyclers = [
+  {
+    id: "mock-1",
+    name: "GreenScrap Goa",
+    service_type: "Plastic & Metal Recycling",
+    phone: "+91 98230 11200",
+    email: "hello@greenscrapgoa.in",
+    accepted_items: ["Plastic", "Metal", "Glass"],
+    address: "Mapusa Industrial Estate, Mapusa, Goa",
+  },
+  {
+    id: "mock-2",
+    name: "E-Waste Recyclers Ltd",
+    service_type: "Electronic Waste",
+    phone: "+91 832 2456 780",
+    email: "contact@ewasterecyclers.in",
+    accepted_items: ["E-Waste", "Mixed"],
+    address: "Verna Industrial Estate, Verna, Goa",
+  },
+  {
+    id: "mock-3",
+    name: "Goa Organic Compost Co.",
+    service_type: "Organic Waste Processing",
+    phone: "+91 98765 43210",
+    email: "info@goaorganic.in",
+    accepted_items: ["Organic"],
+    address: "Margao, South Goa",
+  },
+];
 
 const PickupsPage = () => {
   const navigate = useNavigate();
@@ -495,6 +528,49 @@ const PickupsPage = () => {
           </Button>
         </div>
       )}
+
+      {/* Recycler Partners */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Recycle className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Recycling Partners</h2>
+        </div>
+        <div className="space-y-3">
+          {mockRecyclers.map((r) => (
+            <div key={r.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">{r.service_type}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {r.accepted_items.map((item) => (
+                  <span key={item} className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3 shrink-0" /> {r.address}</p>
+                <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" /> {r.phone}</p>
+                <p className="flex items-center gap-1.5"><Mail className="h-3 w-3 shrink-0" /> {r.email}</p>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <a href={`tel:${r.phone.replace(/\s/g, "")}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted">
+                  <Phone className="h-3.5 w-3.5" /> Call
+                </a>
+                <a href={`mailto:${r.email}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted">
+                  <Mail className="h-3.5 w-3.5" /> Email
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2">
