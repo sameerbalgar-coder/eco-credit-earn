@@ -1,23 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 
-const compressToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const img = new window.Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const max = 640;
-      const s = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement("canvas");
-      c.width = Math.round(img.width * s);
-      c.height = Math.round(img.height * s);
-      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      resolve(c.toDataURL("image/jpeg", 0.7).split(",")[1]);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-
 /**
  * Draw a date/time + location watermark on the bottom-right of the image.
  * Returns a new File (JPEG) with the watermark baked in.
@@ -44,7 +26,8 @@ const watermarkImage = async (
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Image unavailable");
   ctx.drawImage(img, 0, 0, w, h);
   URL.revokeObjectURL(url);
 
@@ -84,7 +67,7 @@ const watermarkImage = async (
   ctx.fillText(line2, w - blockW - pad + pad * 0.5, h - blockH - pad + pad * 0.4 + lineHeight);
 
   const blob: Blob = await new Promise((resolve) =>
-    canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.85)
+    canvas.toBlob((b) => { if (b) resolve(b); }, "image/jpeg", 0.85)
   );
   const name = file.name.replace(/\.[^.]+$/, "") + "_wm.jpg";
   return new File([blob], name, { type: "image/jpeg" });
@@ -118,6 +101,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import exifr from "exifr";
+import { verifyPhoto } from "@/lib/ai-photo";
+import { matchingNearbyReport, type NearbyReport } from "@/lib/report-workflow";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -191,7 +176,9 @@ const ReportPage = () => {
   const [watermarking, setWatermarking] = useState(false);
   const [fakeWarning, setFakeWarning] = useState<string | null>(null);
   const [verifiedCount, setVerifiedCount] = useState(0);
-  const [nearby, setNearby] = useState<{ id: string; waste_type: string; status: string; upvote_count: number; distance_m: number } | null>(null);
+  const [nearbyReports, setNearbyReports] = useState<NearbyReport[]>([]);
+  const nearby = matchingNearbyReport(nearbyReports, selectedCategory);
+  const [aiUnchecked, setAiUnchecked] = useState(false);
   const [aiFilled, setAiFilled] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<"wip" | "boosted" | null>(null);
 
@@ -209,7 +196,7 @@ const ReportPage = () => {
   };
 
   // Auto-detect location
-  useState(() => {
+  useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -219,46 +206,22 @@ const ReportPage = () => {
         () => setAddress("Location unavailable — enter manually")
       );
     }
-  });
+  }, []);
 
   // Nearby duplicate check (database only, no AI cost)
   useEffect(() => {
-    if (!location) { setNearby(null); return; }
+    if (!location) { setNearbyReports([]); return; }
     let cancelled = false;
     (async () => {
       try {
         const { data } = await supabase.rpc("find_nearby_reports" as any, {
           p_lat: location.lat, p_lng: location.lng, p_radius_m: 75,
         });
-        if (!cancelled) setNearby(((data as any[]) ?? [])[0] ?? null);
-      } catch { if (!cancelled) setNearby(null); }
+        if (!cancelled) setNearbyReports((data as unknown as NearbyReport[]) ?? []);
+      } catch { if (!cancelled) setNearbyReports([]); }
     })();
     return () => { cancelled = true; };
   }, [location?.lat, location?.lng]);
-
-  const verifyPhoto = async (file: File): Promise<{ ok: boolean; reason?: string; suggestion?: any }> => {
-    const until = Number(sessionStorage.getItem("ai_check_paused_until") || 0);
-    if (Date.now() < until) return { ok: true, reason: "unchecked" };
-    const pause = () => sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
-    try {
-      const b64 = await compressToBase64(file);
-      const timeout = new Promise<null>((res) => setTimeout(() => res(null), 10000));
-      const result: any = await Promise.race([
-        supabase.functions.invoke("verify-report-image", { body: { image: b64, mimeType: "image/jpeg" } }),
-        timeout,
-      ]);
-      const data = result?.data;
-      if (!result || result.error || !data || data.error || data.bypassed) {
-        pause();
-        return { ok: true, reason: "unchecked" };
-      }
-      if (!data.is_authentic || data.is_ai_generated) return { ok: false, reason: data.reason };
-      return { ok: true, suggestion: data.suggestion };
-    } catch {
-      pause();
-      return { ok: true, reason: "unchecked" };
-    }
-  };
 
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -268,6 +231,7 @@ const ReportPage = () => {
       setFakeWarning(null);
       const verdict = await verifyPhoto(file);
       setVerifying(false);
+      setAiUnchecked(verdict.reason === "unchecked");
       if (!verdict.ok) {
         setFakeWarning(verdict.reason || "This image looks AI-generated or not genuine.");
         toast({
@@ -312,7 +276,7 @@ const ReportPage = () => {
         let photoLat = exifLat;
         let photoLng = exifLng;
         if (photoLat === null || photoLng === null) {
-          const geo = await getCurrentLocation();
+          const geo = location ?? await getCurrentLocation();
           if (geo) {
             photoLat = geo.lat;
             photoLng = geo.lng;
@@ -400,9 +364,6 @@ const ReportPage = () => {
         }
       }
 
-      // Use the first photo's capture time as the report's captured_at
-      const reportCapturedAt = photos[0]?.capturedAt ?? capturedAt ?? new Date();
-
       // Create waste report
       const { error } = await supabase.from("waste_reports").insert({
         reporter_id: user.id,
@@ -413,22 +374,9 @@ const ReportPage = () => {
         longitude: location?.lng ?? null,
         address,
         photo_urls: photoUrls,
-        captured_at: reportCapturedAt.toISOString(),
-      } as any);
+      });
 
       if (error) throw error;
-
-      // Alert supervisors of the new report (non-blocking)
-      try {
-        await supabase.rpc("notify_role" as any, {
-          _role: "supervisor",
-          _title: "New citizen report",
-          _message: `${selectedCategory} reported${address ? ` near ${address}` : ""}.`,
-          _type: "report",
-        });
-      } catch {
-        /* notification failure must not block the report */
-      }
 
       setSubmitted(true);
       setTimeout(() => navigate("/"), 2000);
@@ -513,6 +461,7 @@ const ReportPage = () => {
           ✅ Verified authentic photo · watermarked with location & time
         </div>
       )}
+      {aiUnchecked && <p role="status" className="rounded-xl border border-border bg-muted p-3 text-xs text-muted-foreground">AI check unavailable. Your photo will need supervisor review.</p>}
       {nearbyBanner}
       <input
         ref={fileInputRef}

@@ -17,6 +17,8 @@ const SupervisorDashboard = () => {
   useEffect(() => {
     if (!user) return;
 
+    const load = () => {
+
     // Fetch pending waste reports (unassigned)
     supabase
       .from("waste_reports")
@@ -38,11 +40,6 @@ const SupervisorDashboard = () => {
       .then(({ data }) => {
         if (data) {
           setActiveTasks(data);
-          setStats({
-            pending: data.filter((t) => t.status === "pending" || t.status === "assigned").length,
-            inProgress: data.filter((t) => t.status === "in_progress").length,
-            completed: data.filter((t) => t.status === "completed").length,
-          });
         }
       });
 
@@ -53,6 +50,23 @@ const SupervisorDashboard = () => {
       .eq("user_id", user.id)
       .eq("read", false)
       .then(({ count }) => setUnreadCount(count ?? 0));
+
+    void Promise.all(["pending", "assigned", "in_progress", "completed"].map((status) =>
+      supabase.from("waste_reports").select("id", { count: "exact", head: true }).eq("status", status as "pending")
+    )).then(([pending, assigned, inProgress, completed]) => setStats({
+      pending: (pending.count ?? 0) + (assigned.count ?? 0),
+      inProgress: inProgress.count ?? 0,
+      completed: completed.count ?? 0,
+    }));
+    };
+    load();
+    const channel = supabase.channel(`supervisor-home-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "waste_reports" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, load)
+      .subscribe();
+    window.addEventListener("focus", load);
+    return () => { void supabase.removeChannel(channel); window.removeEventListener("focus", load); };
   }, [user]);
 
   const timeAgo = (dateStr: string) => {

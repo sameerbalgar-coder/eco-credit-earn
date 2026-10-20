@@ -22,6 +22,13 @@
       "when": 1792332923137,
       "tag": "0002_ai_usage_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792485886804,
+      "tag": "0003_notify_supervisors_on_report_creation",
+      "breakpoints": true
     }
   ]
 }

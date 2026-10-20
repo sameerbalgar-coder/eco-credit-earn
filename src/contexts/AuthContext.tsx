@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -45,6 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const currentUserId = useRef<string | null>(null);
+  const profileRequest = useRef<{ id: string; promise: Promise<void> } | null>(null);
 
   // Presence: track this user in a shared channel so supervisors can see who's online.
   useEffect(() => {
@@ -70,13 +72,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  const fetchProfile = async (userId: string, retries = 5): Promise<void> => {
+  const fetchProfile = (userId: string, retries = 3): Promise<void> => {
+    if (profileRequest.current?.id === userId) return profileRequest.current.promise;
+    const promise = (async () => {
     for (let i = 0; i < retries; i++) {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
+      if (currentUserId.current !== userId) return;
       if (data) {
         setProfile(data as unknown as Profile);
         return;
@@ -85,9 +90,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await new Promise((r) => setTimeout(r, 800));
       }
     }
+    })().catch(() => { /* Keep session when the connection fails. */ }).finally(() => {
+      if (profileRequest.current?.id === userId) profileRequest.current = null;
+    });
+    profileRequest.current = { id: userId, promise };
+    return promise;
   };
 
   const applySession = (nextSession: Session | null) => {
+    const nextUserId = nextSession?.user.id ?? null;
+    if (currentUserId.current !== nextUserId) setProfile(null);
+    currentUserId.current = nextUserId;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
     if (!nextSession?.user) {
@@ -101,24 +114,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let active = true;
+    let receivedAuthEvent = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
+        if (!active) return;
+        receivedAuthEvent = true;
         applySession(nextSession);
         if (event === "SIGNED_OUT") return;
 
         const userId = nextSession?.user?.id;
         if (userId) {
-          queueMicrotask(() => {
-            void fetchProfile(userId);
-          });
+          setTimeout(() => { if (active) void fetchProfile(userId); }, 0);
         }
       }
     );
 
     // Recovery/reload must not revoke the user's stored session.
-    let active = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!active) return;
+        if (!active || receivedAuthEvent) return;
         applySession(session);
         if (session?.user) {
           void fetchProfile(session.user.id);
