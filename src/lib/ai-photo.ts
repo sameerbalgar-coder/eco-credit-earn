@@ -4,6 +4,7 @@ const PAUSE_KEY = "ai_photo_v2_paused_until";
 export interface PhotoVerdict {
   ok: boolean;
   reason?: string;
+  kind?: "fake" | "irrelevant";
   suggestion?: { waste_type?: string; estimated_kg?: number; description?: string };
 }
 
@@ -29,15 +30,17 @@ export async function verifyPhoto(file: File): Promise<PhotoVerdict> {
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image unavailable")); };
       img.src = url;
     });
-    timer = setTimeout(() => controller.abort(), 20000);
+    timer = setTimeout(() => controller.abort(), 30000);
     const { data, error } = await supabase.functions.invoke("verify-report-image", {
       body: { image, mimeType: "image/jpeg" }, signal: controller.signal,
     });
     if (error || !data || data.error || data.bypassed || typeof data.is_authentic !== "boolean") {
-      sessionStorage.setItem(PAUSE_KEY, String(Date.now() + 60000));
+      // Only pause when Google says the free quota is used up; other hiccups retry on the next photo.
+      if (data?.reason === "rate_limited") sessionStorage.setItem(PAUSE_KEY, String(Date.now() + 60000));
       return { ok: true, reason: "unchecked" };
     }
-    if (!data.is_authentic || data.is_ai_generated) return { ok: false, reason: data.reason };
+    if (!data.is_authentic || data.is_ai_generated) return { ok: false, kind: "fake", reason: data.reason };
+    if (data.shows_issue === false) return { ok: false, kind: "irrelevant", reason: data.reason };
     return { ok: true, suggestion: data.suggestion };
   } catch {
     return { ok: true, reason: "unchecked" };

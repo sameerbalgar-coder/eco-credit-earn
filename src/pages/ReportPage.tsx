@@ -250,10 +250,13 @@ const ReportPage = () => {
       setVerifying(false);
       setAiUnchecked(verdict.reason === "unchecked");
       if (!verdict.ok) {
-        setFakeWarning(verdict.reason || "This image looks AI-generated or not genuine.");
+        const irrelevant = verdict.kind === "irrelevant";
+        setFakeWarning(verdict.reason || (irrelevant ? "This photo doesn't show trash, a pothole or a hazard." : "This image looks AI-generated or not genuine."));
         toast({
-          title: "Fake image detected",
-          description: "AI-generated or non-genuine photos cannot be reported. Please take a real photo on site.",
+          title: irrelevant ? "Photo not related to an issue" : "Fake image detected",
+          description: irrelevant
+            ? "Only photos of trash, dumping, potholes or hazards can be reported."
+            : "AI-generated or non-genuine photos cannot be reported. Please take a real photo on site.",
           variant: "destructive",
         });
         continue;
