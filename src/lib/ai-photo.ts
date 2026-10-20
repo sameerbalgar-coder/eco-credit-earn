@@ -13,6 +13,8 @@ export async function verifyPhoto(file: File): Promise<PhotoVerdict> {
   const controller = new AbortController();
   try {
     if (Date.now() < Number(sessionStorage.getItem(PAUSE_KEY) || 0)) return { ok: true, reason: "unchecked" };
+    const { data: s } = await supabase.auth.getSession();
+    if (!s?.session) return { ok: true, reason: "unchecked" };
     const image = await new Promise<string>((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);

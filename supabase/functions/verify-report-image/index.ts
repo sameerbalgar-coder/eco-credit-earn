@@ -20,13 +20,16 @@ For waste_type: use "hazardous" for non-garbage hazards (road, tree, electrical,
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
+    // Signed-out or expired sessions skip the AI check (no Gemini call) instead of erroring.
     const auth = req.headers.get("Authorization");
-    if (!auth) return json({ error: "Sign in required" }, 401);
+    if (!auth?.startsWith("Bearer ")) return json({ bypassed: true, reason: "signed_out" });
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: auth } },
     });
-    const { data: u, error: ue } = await sb.auth.getUser(auth.replace("Bearer ", ""));
-    if (ue || !u?.user) return json({ error: "Sign in required" }, 401);
+    const { data: claims, error: ce } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
+    const userId = claims?.claims?.sub;
+    if (ce || !userId || claims?.claims?.role !== "authenticated") return json({ bypassed: true, reason: "signed_out" });
+    const u = { user: { id: userId } };
 
     const body = await req.json().catch(() => null);
     const image = body?.image;
