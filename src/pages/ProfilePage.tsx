@@ -19,7 +19,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   const role = profile?.role ?? "citizen";
-  const isCitizen = role === "citizen" || role === "volunteer";
+  const isCitizen = role === "citizen";
   const credits = profile?.credits_balance ?? 0;
   const co2 = profile?.co2_saved_kg ?? 0;
   const score = profile?.contribution_score ?? 0;
