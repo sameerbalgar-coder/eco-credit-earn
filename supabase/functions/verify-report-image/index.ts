@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       const timer = setTimeout(() => ctrl.abort(), ms);
       try {
         r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: ctrl.signal });
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, signal: ctrl.signal });
         if (r.ok || r.status === 429) break;
         console.error("gemini", model, r.status);
       } catch { r = null; } finally { clearTimeout(timer); }
