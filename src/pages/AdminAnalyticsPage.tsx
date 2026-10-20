@@ -1,13 +1,26 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AiUsageCard from "@/components/AiUsageCard";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, BarChart3, TrendingUp, MapPin, AlertTriangle, Loader2 } from "lucide-react";
+import { ChevronLeft, BarChart3, TrendingUp, MapPin, AlertTriangle, Loader2, CheckCircle2, Clock, XCircle, FileText, Filter, X } from "lucide-react";
+
+type FilterType = "all" | "completed" | "pending" | "rejected";
+
+const filterConfig: Record<FilterType, { label: string; icon: any; color: string }> = {
+  all: { label: "All Reports", icon: FileText, color: "text-primary" },
+  completed: { label: "Resolved", icon: CheckCircle2, color: "text-eco-success" },
+  pending: { label: "Pending", icon: Clock, color: "text-eco-warning" },
+  rejected: { label: "Rejected", icon: XCircle, color: "text-destructive" },
+};
 
 const AdminAnalyticsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterType>(
+    (searchParams.get("filter") as FilterType) || "all"
+  );
 
   useEffect(() => {
     supabase.from("waste_reports").select("*").order("created_at", { ascending: false }).then(({ data }) => {
@@ -30,6 +43,11 @@ const AdminAnalyticsPage = () => {
 
   const topWasteTypes = Object.entries(wasteTypeCounts).sort((a, b) => b[1] - a[1]);
   const maxCount = topWasteTypes[0]?.[1] ?? 1;
+
+  const filteredReports = useMemo(() => {
+    if (activeFilter === "all") return reports;
+    return reports.filter(r => r.status === activeFilter);
+  }, [reports, activeFilter]);
 
   // Find hotspot areas (recurring locations)
   const locationClusters: { address: string; count: number }[] = [];
@@ -56,24 +74,97 @@ const AdminAnalyticsPage = () => {
       ) : (
         <>
           <AiUsageCard />
-          {/* Overview */}
+          {/* Overview — clickable metric cards */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{reports.length}</p>
-              <p className="text-xs text-muted-foreground">Total Reports</p>
+            {([
+              { key: "all" as FilterType, count: reports.length, icon: FileText, variant: "primary" as const },
+              { key: "completed" as FilterType, count: statusCounts["completed"] ?? 0, icon: CheckCircle2, variant: "default" as const },
+              { key: "pending" as FilterType, count: statusCounts["pending"] ?? 0, icon: Clock, variant: "default" as const },
+              { key: "rejected" as FilterType, count: statusCounts["rejected"] ?? 0, icon: XCircle, variant: "default" as const },
+            ]).map(({ key, count, icon: Icon, variant }) => {
+              const isActive = activeFilter === key;
+              const conf = filterConfig[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveFilter(key)}
+                  className={`rounded-xl border p-4 text-center transition-all active:scale-[0.97] ${
+                    isActive
+                      ? "border-primary bg-primary/5 eco-shadow"
+                      : variant === "primary"
+                      ? "eco-gradient-soft border-primary/20 hover:eco-shadow"
+                      : "border-border bg-card hover:border-primary/30"
+                  }`}
+                >
+                  <div className="mb-1.5 flex items-center justify-center">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${isActive ? "bg-primary/15" : "bg-primary/10"}`}>
+                      <Icon className={`h-4 w-4 ${conf.color}`} />
+                    </div>
+                  </div>
+                  <p className={`text-2xl font-bold ${conf.color}`}>{count}</p>
+                  <p className="text-xs text-muted-foreground">{conf.label}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filtered Report List */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" />
+                {filterConfig[activeFilter].label}
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {filteredReports.length}
+                </span>
+              </h2>
+              {activeFilter !== "all" && (
+                <button
+                  onClick={() => setActiveFilter("all")}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" /> Clear filter
+                </button>
+              )}
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-eco-success">{statusCounts["completed"] ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Resolved</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-eco-warning">{statusCounts["pending"] ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold text-destructive">{statusCounts["rejected"] ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Rejected</p>
-            </div>
+            {filteredReports.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-6 text-center">
+                <p className="text-sm text-muted-foreground">No reports match this filter.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {filteredReports.slice(0, 20).map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => navigate("/admin/verify")}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:eco-shadow active:scale-[0.98]"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <AlertTriangle className={`h-4 w-4 ${r.waste_type === "hazardous" ? "text-destructive" : "text-eco-warning"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground capitalize truncate">{r.waste_type}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {r.address ?? "No address"} • {new Date(r.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      r.status === "completed" ? "bg-eco-success/10 text-eco-success" :
+                      r.status === "pending" ? "bg-eco-warning/10 text-eco-warning" :
+                      r.status === "rejected" ? "bg-destructive/10 text-destructive" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {r.status}
+                    </span>
+                  </button>
+                ))}
+                {filteredReports.length > 20 && (
+                  <p className="text-center text-xs text-muted-foreground py-2">
+                    Showing 20 of {filteredReports.length} reports
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Waste Type Distribution */}

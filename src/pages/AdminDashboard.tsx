@@ -96,7 +96,7 @@ const AdminDashboard = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 animate-slide-up">
-        <StatCard icon={ClipboardCheck} label="Hazard Total Reports" value={displayCount(stats.total)} variant="primary" />
+        <StatCard icon={ClipboardCheck} label="Hazard Total Reports" value={displayCount(stats.total)} variant="primary" onClick={() => navigate("/admin/analytics?filter=all")} />
         <Button
           variant="ghost"
           className="h-auto w-full justify-start p-0 text-left hover:bg-transparent"
@@ -107,8 +107,8 @@ const AdminDashboard = () => {
             <StatCard icon={Clock} label="Pending" value={displayCount(stats.pending)} />
           </div>
         </Button>
-        <StatCard icon={CheckCircle} label="Completed" value={displayCount(stats.completed)} />
-        <StatCard icon={Users} label="Users" value={displayCount(stats.users)} />
+        <StatCard icon={CheckCircle} label="Completed" value={displayCount(stats.completed)} onClick={() => navigate("/admin/analytics?filter=completed")} />
+        <StatCard icon={Users} label="Users" value={displayCount(stats.users)} onClick={() => navigate("/admin/zones")} />
       </div>
 
       {/* Quick Actions */}
