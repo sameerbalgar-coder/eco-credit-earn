@@ -50,24 +50,25 @@ Deno.serve(async (req) => {
     const [b, a] = await Promise.all([fetchImage(task.before_photo_url), fetchImage(task.after_photo_url)]);
     if (!b || !a) return json({ bypassed: true, reason: "image_unavailable" });
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 16000);
-    let r: Response;
-    try {
-      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { text: PROMPT },
-            { inline_data: { mime_type: b.mime, data: b.data } },
-            { inline_data: { mime_type: a.mime, data: a.data } },
-          ] }],
-          generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
-        }),
-        signal: ctrl.signal,
-      });
-    } catch { await log("bypassed", "timeout"); return json({ bypassed: true, reason: "timeout" }); } finally { clearTimeout(timer); }
+    const body = JSON.stringify({
+      contents: [{ parts: [
+        { text: PROMPT },
+        { inline_data: { mime_type: b.mime, data: b.data } },
+        { inline_data: { mime_type: a.mime, data: a.data } },
+      ] }],
+      generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
+    });
+    let r: Response | null = null;
+    for (const [model, ms] of [["gemini-3.5-flash", 12000], ["gemini-flash-latest", 10000]] as const) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ms);
+      try {
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+          { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: ctrl.signal });
+        if (r.ok || r.status === 429) break;
+      } catch { r = null; } finally { clearTimeout(timer); }
+    }
+    if (!r) { await log("bypassed", "timeout"); return json({ bypassed: true, reason: "timeout" }); }
     if (r.status === 429) { await log("bypassed", "rate_limited"); return json({ bypassed: true, reason: "rate_limited" }); }
     if (!r.ok) { await log("bypassed", "ai_unavailable"); return json({ bypassed: true, reason: "ai_unavailable" }); }
     const d = await r.json();
