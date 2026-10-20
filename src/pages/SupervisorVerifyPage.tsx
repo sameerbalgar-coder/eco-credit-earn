@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, ThumbsUp, Loader2, MapPin } from "lucide-react";
+import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, ThumbsUp, Loader2, MapPin, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const SupervisorVerifyPage = () => {
   const navigate = useNavigate();
@@ -13,6 +22,9 @@ const SupervisorVerifyPage = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [reporters, setReporters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [flaggingReport, setFlaggingReport] = useState<any | null>(null);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagging, setFlagging] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -87,6 +99,39 @@ const SupervisorVerifyPage = () => {
       });
     } catch {
       toast({ title: "Action failed", description: "Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleFlag = async () => {
+    if (!flaggingReport) return;
+    if (!flagReason.trim()) {
+      toast({ title: "Reason required", description: "Please enter why this report is being flagged.", variant: "destructive" });
+      return;
+    }
+    setFlagging(true);
+    try {
+      await supabase.from("waste_reports").update({
+        status: "dismissed",
+        supervisor_notes: `FLAGGED: ${flagReason.trim()}`,
+      } as any).eq("id", flaggingReport.id);
+
+      const delta = -10;
+      const current = reporters[flaggingReport.reporter_id]?.credibility_score ?? 50;
+      await supabase.from("profiles").update({
+        credibility_score: Math.max(0, Math.min(100, current + delta)),
+      } as any).eq("id", flaggingReport.reporter_id);
+
+      setReports(prev => prev.filter(r => r.id !== flaggingReport.id));
+      toast({
+        title: "Report flagged as fraudulent",
+        description: "Report dismissed and no worker will be assigned.",
+      });
+      setFlaggingReport(null);
+      setFlagReason("");
+    } catch {
+      toast({ title: "Could not flag report", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setFlagging(false);
     }
   };
 
@@ -174,12 +219,50 @@ const SupervisorVerifyPage = () => {
                       <XCircle className="mr-1.5 h-4 w-4" /> Reject
                     </Button>
                   </div>
+                  <button
+                    onClick={() => { setFlaggingReport(r); setFlagReason(""); }}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <Flag className="h-3.5 w-3.5" /> Flag as Fake / Fraudulent
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Flag as Fake Dialog */}
+      <Dialog open={!!flaggingReport} onOpenChange={(open) => { if (!open) { setFlaggingReport(null); setFlagReason(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-4 w-4 text-destructive" /> Flag as Fake / Fraudulent
+            </DialogTitle>
+            <DialogDescription>
+              This report will be dismissed and no worker will be assigned. The reporter's credibility score will be penalized.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Reason</label>
+            <Textarea
+n              placeholder="Explain why this report looks fraudulent (e.g. AI-generated photo, wrong location, duplicate, etc.)"
+              value={flagReason}
+              onChange={(e) => setFlagReason(e.target.value)}
+              className="rounded-xl min-h-[80px] resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setFlaggingReport(null); setFlagReason(""); }} disabled={flagging}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleFlag} disabled={flagging}>
+              {flagging ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Flag className="mr-1.5 h-4 w-4" />}
+              {flagging ? "Flagging..." : "Flag & Dismiss"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

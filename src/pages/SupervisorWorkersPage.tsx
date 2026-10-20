@@ -1,9 +1,26 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, UserPlus, Users, Mail } from "lucide-react";
+import { ArrowLeft, UserPlus, Users, Mail, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const SupervisorWorkersPage = () => {
   const navigate = useNavigate();
@@ -11,10 +28,16 @@ const SupervisorWorkersPage = () => {
   const { user, onlineUserIds } = useAuth();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [zones, setZones] = useState<any[]>([]);
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", zoneId: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const onlineCount = workers.filter((w) => onlineUserIds.has(w.id)).length;
 
   useEffect(() => {
     fetchWorkers();
+    fetchZones();
     const channel = supabase
       .channel("workers-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchWorkers())
@@ -24,6 +47,11 @@ const SupervisorWorkersPage = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchZones = async () => {
+    const { data } = await supabase.from("zones").select("id, name").order("name");
+    if (data) setZones(data);
+  };
 
   const fetchWorkers = async () => {
     setLoading(true);
@@ -41,6 +69,60 @@ const SupervisorWorkersPage = () => {
       if (profiles) setWorkers(profiles);
     }
     setLoading(false);
+  };
+
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!form.fullName.trim()) errs.fullName = "Full name is required";
+    else if (form.fullName.trim().length < 2) errs.fullName = "Name is too short";
+    if (!form.email.trim() && !form.phone.trim()) {
+      errs.email = "Email or phone is required";
+    } else {
+      if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        errs.email = "Enter a valid email address";
+      }
+      if (form.phone.trim() && !/^[0-9]{10}$/.test(form.phone.trim())) {
+        errs.phone = "Enter a valid 10-digit phone number";
+      }
+    }
+    if (!form.password) errs.password = "Password is required";
+    else if (form.password.length < 6) errs.password = "Password must be at least 6 characters";
+    if (!form.zoneId) errs.zoneId = "Select a zone";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleCreate = async () => {
+    if (!validate()) return;
+    setCreating(true);
+    try {
+      const email = form.email.trim().toLowerCase();
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password: form.password,
+        email_confirm: true,
+        user_metadata: { display_name: form.fullName.trim(), role: "worker", zone_id: form.zoneId },
+      });
+      if (authError) throw authError;
+      const userId = authData.user.id;
+      await supabase.from("user_roles").insert({ user_id: userId, role: "worker" } as any);
+      await supabase.from("profiles").upsert({
+        id: userId,
+        display_name: form.fullName.trim(),
+        email,
+        role: "worker",
+        assigned_zone_id: form.zoneId,
+      } as any);
+      toast({ title: "Worker created!", description: `${form.fullName.trim()} can now sign in as a worker.` });
+      setShowCreate(false);
+      setForm({ fullName: "", email: "", phone: "", password: "", zoneId: "" });
+      setErrors({});
+      fetchWorkers();
+    } catch (err: any) {
+      toast({ title: "Could not create worker", description: err?.message ?? "Please try again.", variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
   };
 
   const shareLocation = (worker: any) => {
@@ -74,6 +156,9 @@ const SupervisorWorkersPage = () => {
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="text-lg font-bold text-foreground">Workers</h1>
+        <Button size="sm" className="ml-auto rounded-xl" onClick={() => setShowCreate(true)}>
+          <UserPlus className="mr-1.5 h-4 w-4" /> Add Worker
+        </Button>
       </div>
 
       {/* Info */}
@@ -143,6 +228,91 @@ const SupervisorWorkersPage = () => {
             })}
         </div>
       )}
+
+      {/* Create Worker Dialog */}
+      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setErrors({}); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-primary" /> Create New Worker
+            </DialogTitle>
+            <DialogDescription>
+              Create a worker account. The worker can sign in with their email and password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Full Name</label>
+              <Input
+                placeholder="e.g. Rajesh Kumar"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                className="rounded-xl"
+              />
+              {errors.fullName && <p className="text-[11px] text-destructive">{errors.fullName}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email</label>
+                <Input
+                  type="email"
+                  placeholder="worker@email.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="rounded-xl"
+                />
+                {errors.email && <p className="text-[11px] text-destructive">{errors.email}</p>}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Phone</label>
+                <Input
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="10-digit number"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
+                  className="rounded-xl"
+                />
+                {errors.phone && <p className="text-[11px] text-destructive">{errors.phone}</p>}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Password</label>
+              <Input
+                type="password"
+                placeholder="At least 6 characters"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="rounded-xl"
+              />
+              {errors.password && <p className="text-[11px] text-destructive">{errors.password}</p>}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Assigned Zone</label>
+              <Select value={form.zoneId} onValueChange={(v) => setForm({ ...form, zoneId: v })}>
+                <SelectTrigger className="w-full rounded-xl">
+                  <SelectValue placeholder="Select a zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {zones.map((z) => (
+                    <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.zoneId && <p className="text-[11px] text-destructive">{errors.zoneId}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} disabled={creating}>
+              {creating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <UserPlus className="mr-1.5 h-4 w-4" />}
+              {creating ? "Creating..." : "Create Worker"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
