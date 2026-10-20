@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const [b, a] = await Promise.all([fetchImage(task.before_photo_url), fetchImage(task.after_photo_url)]);
     if (!b || !a) return json({ bypassed: true, reason: "image_unavailable" });
 
-    const body = JSON.stringify({
+    const payload = JSON.stringify({
       contents: [{ parts: [
         { text: PROMPT },
         { inline_data: { mime_type: b.mime, data: b.data } },
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       const timer = setTimeout(() => ctrl.abort(), ms);
       try {
         r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body, signal: ctrl.signal });
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, signal: ctrl.signal });
         if (r.ok || r.status === 429) break;
       } catch { r = null; } finally { clearTimeout(timer); }
     }

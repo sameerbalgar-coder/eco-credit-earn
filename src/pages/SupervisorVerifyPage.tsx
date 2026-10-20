@@ -246,7 +246,7 @@ const SupervisorVerifyPage = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Reason</label>
             <Textarea
-n              placeholder="Explain why this report looks fraudulent (e.g. AI-generated photo, wrong location, duplicate, etc.)"
+              placeholder="Explain why this report looks fraudulent (e.g. AI-generated photo, wrong location, duplicate, etc.)"
               value={flagReason}
               onChange={(e) => setFlagReason(e.target.value)}
               className="rounded-xl min-h-[80px] resize-none"
