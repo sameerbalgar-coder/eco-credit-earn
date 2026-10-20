@@ -95,7 +95,6 @@ const SupervisorVerifyPage = () => {
       setReports(prev => prev.filter(r => r.id !== reportId));
       toast({
         title: action === "assigned" ? "Report Verified ✅" : "Report Rejected",
-        description: action === "assigned" ? "Carbon credits awarded to reporter." : undefined,
       });
     } catch {
       toast({ title: "Action failed", description: "Please try again.", variant: "destructive" });

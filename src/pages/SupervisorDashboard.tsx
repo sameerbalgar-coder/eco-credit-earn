@@ -69,13 +69,16 @@ const SupervisorDashboard = () => {
     return () => { void supabase.removeChannel(channel); window.removeEventListener("focus", load); };
   }, [user]);
 
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+  const formatTimestamp = (dateStr: string | null) => {
+    if (!dateStr) return "N/A";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(dateStr));
   };
 
   const displayName = profile?.display_name ?? "Supervisor";
@@ -232,7 +235,7 @@ const SupervisorDashboard = () => {
                   <div>
                     <p className="text-sm font-medium text-foreground capitalize">{r.waste_type}</p>
                     <p className="text-xs text-muted-foreground">
-                      {r.address ? r.address.slice(0, 30) : "No address"} • {timeAgo(r.created_at)}
+                      {r.address ? r.address.slice(0, 30) : "No address"} • {formatTimestamp(r.created_at)}
                     </p>
                   </div>
                 </div>
@@ -288,7 +291,7 @@ const SupervisorDashboard = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground capitalize">Task</p>
-                    <p className="text-xs text-muted-foreground">{timeAgo(t.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimestamp(t.created_at)}</p>
                   </div>
                 </div>
                 <span

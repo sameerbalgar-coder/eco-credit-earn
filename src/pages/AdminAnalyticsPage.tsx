@@ -145,7 +145,7 @@ const AdminAnalyticsPage = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground capitalize truncate">{r.waste_type}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {r.address ?? "No address"} • {new Date(r.created_at).toLocaleDateString()}
+                        {r.address ?? "No address"} • {r.created_at ? new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(r.created_at)) : "N/A"}
                       </p>
                     </div>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${

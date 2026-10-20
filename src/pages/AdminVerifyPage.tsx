@@ -92,7 +92,7 @@ const AdminVerifyPage = () => {
     }
 
     setReports(prev => prev.filter(r => r.id !== reportId));
-    toast({ title: action === "assigned" ? "Report Verified ✅" : "Report Rejected", description: action === "assigned" ? "Carbon credits awarded to reporter." : undefined });
+    toast({ title: action === "assigned" ? "Report Verified ✅" : "Report Rejected" });
   };
 
   const getCredibilityColor = (score: number) => {

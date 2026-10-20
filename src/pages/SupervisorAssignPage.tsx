@@ -39,14 +39,16 @@ interface Task {
   created_at: string;
 }
 
-const timeAgo = (dateStr: string) => {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+const formatTimestamp = (dateStr: string | null) => {
+  if (!dateStr) return "N/A";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(dateStr));
 };
 
 const SupervisorAssignPage = () => {
@@ -250,7 +252,6 @@ const SupervisorAssignPage = () => {
 
     toast({
       title: result?.already_verified ? "Already verified" : "Cleanup verified",
-      description: `${result?.credits_awarded ?? 0} carbon credits released to the reporting citizen.`,
     });
   };
 
@@ -272,7 +273,7 @@ const SupervisorAssignPage = () => {
     if (error) {
       toast({ title: "Flagging failed", description: "Please try again.", variant: "destructive" });
       } else {
-      toast({ title: "Report flagged as fake", description: "No carbon credits were released." });
+      toast({ title: "Report flagged as fake" });
     }
   };
 
@@ -392,7 +393,7 @@ const SupervisorAssignPage = () => {
                         </p>
                       </div>
                       <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        {timeAgo(r.created_at)}
+                        {formatTimestamp(r.created_at)}
                       </span>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
@@ -678,7 +679,7 @@ const SupervisorAssignPage = () => {
                 <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-2.5">
                   <CheckCircle className="h-4 w-4 text-eco-success" />
                   <span className="text-xs text-foreground">
-                    Completed {timeAgo(proofTask.task.completed_at)}
+                    Completed {formatTimestamp(proofTask.task.completed_at)}
                   </span>
                 </div>
               )}
@@ -699,7 +700,7 @@ const SupervisorAssignPage = () => {
                 <div className="flex items-center gap-2 rounded-lg bg-eco-success/10 p-3 text-xs text-eco-success">
                   <ShieldCheck className="h-4 w-4" />
                   <span>
-                    Verified {proofTask.report.verified_at ? timeAgo(proofTask.report.verified_at) : "already"} · {proofTask.report.credits_awarded ?? 0} credits released
+                    Verified {proofTask.report.verified_at ? formatTimestamp(proofTask.report.verified_at) : "already"}
                   </span>
                 </div>
               ) : (
@@ -709,7 +710,7 @@ const SupervisorAssignPage = () => {
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-3.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                 >
                   {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  Verify & Release Credits
+                  Verify Cleanup
                 </button>
               )}
               {proofTask.report.status !== "verified" && (
@@ -742,7 +743,7 @@ const SupervisorAssignPage = () => {
               </div>
               <div>
                 <h2 id="flag-report-title" className="text-base font-bold text-foreground">Flag as Fake Report?</h2>
-                <p className="mt-1 text-xs text-muted-foreground">This rejects the report and prevents carbon credits from being released.</p>
+                <p className="mt-1 text-xs text-muted-foreground">This rejects the report and prevents it from being processed further.</p>
               </div>
             </div>
             <label className="mt-4 block text-xs font-semibold text-foreground" htmlFor="flag-reason">Reason</label>
