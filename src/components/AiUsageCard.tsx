@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles } from "lucide-react";
 
-export const FREE_DAILY_LIMIT = 1500;
+// Google free tier: ~20 checks per model per day, rotated across 5 models.
+export const FREE_DAILY_LIMIT = 100;
 
 const AiUsageCard = () => {
   const [counts, setCounts] = useState({ total: 0, authentic: 0, flagged_fake: 0, bypassed: 0 });
