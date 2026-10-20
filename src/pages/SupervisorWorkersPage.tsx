@@ -36,7 +36,7 @@ const SupervisorWorkersPage = () => {
       const ids = roles.map((r) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, email, credits_balance, co2_saved_kg, contribution_score")
+        .select("id, display_name, email")
         .in("id", ids);
       if (profiles) setWorkers(profiles);
     }
@@ -130,20 +130,6 @@ const SupervisorWorkersPage = () => {
                 >
                   {online ? "Online" : "Offline"}
                 </span>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-sm font-bold text-foreground">{w.credits_balance}</p>
-                  <p className="text-[10px] text-muted-foreground">Credits</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">{w.co2_saved_kg}kg</p>
-                  <p className="text-[10px] text-muted-foreground">CO₂</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">{w.contribution_score}</p>
-                  <p className="text-[10px] text-muted-foreground">Score</p>
-                </div>
               </div>
               <button
                 onClick={() => shareLocation(w)}

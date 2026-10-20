@@ -9,7 +9,6 @@ import {
   MapPin,
   Navigation,
   Clock,
-  Coins,
   Shield,
   ChevronRight,
   AlertTriangle,
@@ -94,8 +93,6 @@ const WorkerDashboard = () => {
   const activeTasks = tasks.filter((t) => t.status !== "completed");
   const displayName = profile?.display_name ?? "Worker";
   const badgeLevel = profile?.badge_level ?? "Bronze";
-  const credits = profile?.credits_balance ?? 0;
-
   return (
     <div className="space-y-5 px-4 py-6">
       {/* Worker Header */}
@@ -109,9 +106,6 @@ const WorkerDashboard = () => {
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-primary-foreground ${badgeColors[badgeLevel] || badgeColors.Bronze}`}>
                 <Shield className="h-3 w-3" /> {badgeLevel}
-              </span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Coins className="h-3 w-3" /> {credits} EC
               </span>
             </div>
           </div>

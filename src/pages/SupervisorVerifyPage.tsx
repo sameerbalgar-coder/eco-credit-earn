@@ -96,14 +96,15 @@ const SupervisorVerifyPage = () => {
     return "text-destructive";
   };
 
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  };
+  const formatDateTime = (dateStr: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(dateStr));
 
   return (
     <div className="px-4 py-6 space-y-4">
@@ -142,7 +143,7 @@ const SupervisorVerifyPage = () => {
                       <p className="text-sm font-medium text-foreground">{reporter?.display_name ?? "Unknown"}</p>
                       <p className="text-xs text-muted-foreground">Credibility: <span className={`font-semibold ${getCredibilityColor(credibility)}`}>{credibility}/100</span></p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</span>
+                    <span className="text-xs text-muted-foreground">{formatDateTime(r.created_at)}</span>
                   </div>
 
                   <div className="space-y-1.5">
