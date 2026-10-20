@@ -263,8 +263,7 @@ const SupervisorAssignPage = () => {
       .from("waste_reports")
       .update({
         status: "rejected",
-        is_flagged: true,
-        flag_reason: reason,
+        review_reason: reason,
         flagged_by: user.id,
         flagged_at: new Date().toISOString(),
       })
