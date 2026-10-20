@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const log = async (outcome: string, reason?: string) => {
-      try { await admin.from("ai_usage_logs").insert({ user_id: u.user.id, model: "gemini-3.5-flash", outcome, reason: `cleanup:${reason ?? ""}`.slice(0, 200) }); } catch { /* never block */ }
+      try { await admin.from("ai_usage_logs").insert({ user_id: u.user.id, model: "gemini-rotation", outcome, reason: `cleanup:${reason ?? ""}`.slice(0, 200) }); } catch { /* never block */ }
     };
     const key = Deno.env.get("GEMINI_API_KEY");
     if (!key) return json({ bypassed: true, reason: "not_configured" });
@@ -67,26 +67,27 @@ Deno.serve(async (req) => {
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
       ],
     });
+    // Free-tier daily quotas are per model (some only ~20/day), so rotate through every live model.
+    // 404 (retired) and 429 (quota used) skip instantly; total time stays under the app's 30s wait.
     let r: Response | null = null;
-    for (const [model, ms] of [["gemini-1.5-flash", 10000], ["gemini-2.0-flash", 10000], ["gemini-2.5-flash", 10000]] as const) {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), ms);
-        try {
-          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-            { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, signal: ctrl.signal });
-          if (r.ok) break;
-          if (r.status === 429 && attempt === 0) {
-            await new Promise((res) => setTimeout(res, 1500 + Math.random() * 500));
-            continue;
-          }
-        } catch { r = null; } finally { clearTimeout(timer); }
-      }
-      if (r?.ok) break;
+    let sawQuota = false;
+    const deadline = Date.now() + 24000;
+    for (const model of ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash", "gemini-3-flash-preview", "gemini-flash-lite-latest"]) {
+      const left = deadline - Date.now();
+      if (left < 2000) break;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), Math.min(9000, left));
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload, signal: ctrl.signal });
+        if (res.ok) { r = res; break; }
+        if (res.status === 429) sawQuota = true;
+        console.error("gemini", model, res.status);
+        await res.body?.cancel().catch(() => {});
+      } catch (e) { console.error("gemini fetch", model, String(e)); } finally { clearTimeout(timer); }
     }
-    if (!r) { await log("bypassed", "timeout"); return json({ bypassed: true, reason: "timeout" }); }
-    if (r.status === 429) { await log("bypassed", "rate_limited"); return json({ bypassed: true, reason: "rate_limited" }); }
-    if (!r.ok) { await log("bypassed", "ai_unavailable"); return json({ bypassed: true, reason: "ai_unavailable" }); }
+    if (!r && sawQuota) { await log("bypassed", "rate_limited"); return json({ bypassed: true, reason: "rate_limited" }); }
+    if (!r) { await log("bypassed", "ai_unavailable"); return json({ bypassed: true, reason: "ai_unavailable" }); }
     const d = await r.json();
     const text = (d?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? "").join("");
     let v: any;
