@@ -52,7 +52,7 @@ const ResetPasswordPage = () => {
       toast({ title: "Update failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Password updated", description: "You can now log in with your new password." });
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       navigate("/auth", { replace: true });
     }
   };
