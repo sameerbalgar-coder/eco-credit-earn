@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,40 +7,40 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "./components/AppLayout";
-import Index from "./pages/Index";
-import ReportPage from "./pages/ReportPage";
-import HazardPage from "./pages/HazardPage";
-import MapPage from "./pages/MapPage";
-import WalletPage from "./pages/WalletPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import ProfilePage from "./pages/ProfilePage";
-import AuthPage from "./pages/AuthPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import MaterialsPage from "./pages/MaterialsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import SupervisorDashboard from "./pages/SupervisorDashboard";
-import SupervisorAssignPage from "./pages/SupervisorAssignPage";
-import SupervisorWorkersPage from "./pages/SupervisorWorkersPage";
-import SupervisorCommunityPage from "./pages/SupervisorCommunityPage";
-import SupervisorHotspotsPage from "./pages/SupervisorHotspotsPage";
-import SupervisorVerifyPage from "./pages/SupervisorVerifyPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminVerifyPage from "./pages/AdminVerifyPage";
-import AdminZonesPage from "./pages/AdminZonesPage";
-import ZoneStaffPage from "./pages/ZoneStaffPage";
-import AdminCreditsPage from "./pages/AdminCreditsPage";
-import AdminOffersPage from "./pages/AdminOffersPage";
-import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
-import ReportHistoryPage from "./pages/ReportHistoryPage";
-import CommunityPage from "./pages/CommunityPage";
-import RecyclingPage from "./pages/RecyclingPage";
-import PickupsPage from "./pages/PickupsPage";
-import StaffPickupsPage from "./pages/StaffPickupsPage";
-import PublicFeedPage from "./pages/PublicFeedPage";
-import WorkerDashboard from "./pages/WorkerDashboard";
-import WorkerTaskDetail from "./pages/WorkerTaskDetail";
-import WorkerHistoryPage from "./pages/WorkerHistoryPage";
-import NotFound from "./pages/NotFound";
+const Index = lazy(() => import("./pages/Index"));
+const ReportPage = lazy(() => import("./pages/ReportPage"));
+const HazardPage = lazy(() => import("./pages/HazardPage"));
+const MapPage = lazy(() => import("./pages/MapPage"));
+const WalletPage = lazy(() => import("./pages/WalletPage"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const MaterialsPage = lazy(() => import("./pages/MaterialsPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const SupervisorDashboard = lazy(() => import("./pages/SupervisorDashboard"));
+const SupervisorAssignPage = lazy(() => import("./pages/SupervisorAssignPage"));
+const SupervisorWorkersPage = lazy(() => import("./pages/SupervisorWorkersPage"));
+const SupervisorCommunityPage = lazy(() => import("./pages/SupervisorCommunityPage"));
+const SupervisorHotspotsPage = lazy(() => import("./pages/SupervisorHotspotsPage"));
+const SupervisorVerifyPage = lazy(() => import("./pages/SupervisorVerifyPage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminVerifyPage = lazy(() => import("./pages/AdminVerifyPage"));
+const AdminZonesPage = lazy(() => import("./pages/AdminZonesPage"));
+const ZoneStaffPage = lazy(() => import("./pages/ZoneStaffPage"));
+const AdminCreditsPage = lazy(() => import("./pages/AdminCreditsPage"));
+const AdminOffersPage = lazy(() => import("./pages/AdminOffersPage"));
+const AdminAnalyticsPage = lazy(() => import("./pages/AdminAnalyticsPage"));
+const ReportHistoryPage = lazy(() => import("./pages/ReportHistoryPage"));
+const CommunityPage = lazy(() => import("./pages/CommunityPage"));
+const RecyclingPage = lazy(() => import("./pages/RecyclingPage"));
+const PickupsPage = lazy(() => import("./pages/PickupsPage"));
+const StaffPickupsPage = lazy(() => import("./pages/StaffPickupsPage"));
+const PublicFeedPage = lazy(() => import("./pages/PublicFeedPage"));
+const WorkerDashboard = lazy(() => import("./pages/WorkerDashboard"));
+const WorkerTaskDetail = lazy(() => import("./pages/WorkerTaskDetail"));
+const WorkerHistoryPage = lazy(() => import("./pages/WorkerHistoryPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -88,6 +88,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">Loading…</div>}>
           <Routes>
             <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
             <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
@@ -138,6 +139,7 @@ const App = () => (
               }
             />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

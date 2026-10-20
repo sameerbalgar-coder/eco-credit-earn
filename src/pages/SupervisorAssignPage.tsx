@@ -82,27 +82,28 @@ const SupervisorAssignPage = () => {
     const key = `ai_cleanup_${t.id}`;
     const cached = sessionStorage.getItem(key);
     if (cached) { try { setAiProof((p) => ({ ...p, [t.id]: JSON.parse(cached) })); return; } catch { /* ignore */ } }
-    if (Date.now() < Number(sessionStorage.getItem("ai_check_paused_until") || 0)) { setAiProof((p) => ({ ...p, [t.id]: { bypassed: true } })); return; }
+    if (Date.now() < Number(sessionStorage.getItem("ai_photo_v2_paused_until") || 0)) { setAiProof((p) => ({ ...p, [t.id]: { bypassed: true } })); return; }
     setAiProof((p) => ({ ...p, [t.id]: { loading: true } }));
     (async () => {
       let res: any = { bypassed: true };
       try {
         const r: any = await Promise.race([
           supabase.functions.invoke("verify-cleanup-proof", { body: { task_id: t.id } }),
-          new Promise((ok) => setTimeout(() => ok(null), 15000)),
+          new Promise((ok) => setTimeout(() => ok(null), 20000)),
         ]);
         if (r?.data && !r.error && !r.data.error && !r.data.bypassed) { res = r.data; sessionStorage.setItem(key, JSON.stringify(res)); }
-        else if (r?.data?.reason !== "missing_photos") sessionStorage.setItem("ai_check_paused_until", String(Date.now() + 3 * 60 * 1000));
+        else if (r?.data?.reason !== "missing_photos") sessionStorage.setItem("ai_photo_v2_paused_until", String(Date.now() + 60000));
       } catch { /* bypass */ }
       setAiProof((p) => ({ ...p, [t.id]: res }));
     })();
   }, [proofTask?.task.id]);
 
   const refetch = async () => {
-    const [{ data: rData }, { data: tData }] = await Promise.all([
+    const [{ data: rData, error: reportError }, { data: tData, error: taskError }] = await Promise.all([
       supabase.from("waste_reports").select("*").order("created_at", { ascending: false }),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
     ]);
+    if (reportError || taskError) toast({ title: "Could not load reports", description: "Please check your connection and reload.", variant: "destructive" });
     if (rData) setReports(rData as any);
     if (tData) setTasks(tData as any);
 

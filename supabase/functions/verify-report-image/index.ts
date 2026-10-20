@@ -37,16 +37,16 @@ Deno.serve(async (req) => {
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const log = async (outcome: string, reason?: string) => {
-      try { await admin.from("ai_usage_logs").insert({ user_id: u.user.id, model: "gemini-3.8-flash", outcome, reason: reason?.slice(0, 200) ?? null }); } catch { /* never block */ }
+      try { await admin.from("ai_usage_logs").insert({ user_id: u.user.id, model: "gemini-3.5-flash", outcome, reason: reason?.slice(0, 200) ?? null }); } catch { /* never block */ }
     };
     const key = Deno.env.get("GEMINI_API_KEY");
     if (!key) return json({ bypassed: true, reason: "not_configured" });
 
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const timer = setTimeout(() => ctrl.abort(), 16000);
     let r: Response;
     try { r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
