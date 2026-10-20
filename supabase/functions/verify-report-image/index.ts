@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     const key = Deno.env.get("GEMINI_API_KEY");
     if (!key) return json({ bypassed: true, reason: "not_configured" });
 
-    const body = JSON.stringify({
+    const payload = JSON.stringify({
       contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mime, data: image } }] }],
       generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
     });

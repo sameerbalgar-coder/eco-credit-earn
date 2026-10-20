@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const [b, a] = await Promise.all([fetchImage(task.before_photo_url), fetchImage(task.after_photo_url)]);
     if (!b || !a) return json({ bypassed: true, reason: "image_unavailable" });
 
-    const body = JSON.stringify({
+    const payload = JSON.stringify({
       contents: [{ parts: [
         { text: PROMPT },
         { inline_data: { mime_type: b.mime, data: b.data } },
