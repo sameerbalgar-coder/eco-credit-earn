@@ -47,18 +47,31 @@ Deno.serve(async (req) => {
 
     const payload = JSON.stringify({
       contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mime, data: image } }] }],
-      generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
+      generationConfig: { maxOutputTokens: 1024, responseMimeType: "application/json" },
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+      ],
     });
     let r: Response | null = null;
-    for (const [model, ms] of [["gemini-3-flash-preview", 9000], ["gemini-3.5-flash", 8000], ["gemini-flash-lite-latest", 8000], ["gemini-flash-latest", 8000]] as const) {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), ms);
-      try {
-        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, signal: ctrl.signal });
-        if (r.ok || r.status === 429) break;
-        console.error("gemini", model, r.status);
-      } catch (e) { console.error("gemini fetch", model, String(e)); r = null; } finally { clearTimeout(timer); }
+    for (const [model, ms] of [["gemini-1.5-flash", 10000], ["gemini-2.0-flash", 10000], ["gemini-2.5-flash", 10000]] as const) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), ms);
+        try {
+          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+            { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, signal: ctrl.signal });
+          if (r.ok) break;
+          if (r.status === 429 && attempt === 0) {
+            await new Promise((res) => setTimeout(res, 1500 + Math.random() * 500));
+            continue;
+          }
+          console.error("gemini", model, r.status);
+        } catch (e) { console.error("gemini fetch", model, String(e)); r = null; } finally { clearTimeout(timer); }
+      }
+      if (r?.ok) break;
     }
     if (!r) { await log("bypassed", "timeout"); return json({ bypassed: true, reason: "timeout" }); }
     if (r.status === 429) { await log("bypassed", "rate_limited"); return json({ bypassed: true, reason: "rate_limited" }); }
