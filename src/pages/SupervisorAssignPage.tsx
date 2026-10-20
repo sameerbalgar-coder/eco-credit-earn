@@ -71,7 +71,7 @@ const SupervisorAssignPage = () => {
   const [assigning, setAssigning] = useState(false);
 
   const [proofTask, setProofTask] = useState<{ task: Task; report: Report } | null>(null);
-  const [flagFor, setFlagFor] = useState<{ task: Task; report: Report } | null>(null);
+  const [flagFor, setFlagFor] = useState<{ task: Task | null; report: Report } | null>(null);
   const [flagReason, setFlagReason] = useState("Duplicate report");
   const [flagDetails, setFlagDetails] = useState("");
   const [reviewing, setReviewing] = useState(false);
@@ -258,11 +258,26 @@ const SupervisorAssignPage = () => {
   const handleFlagFake = async (report: Report, reason: string) => {
     if (!user) return;
     setReviewing(true);
-    const { error } = await supabase.rpc("verify_completed_report", {
-      p_report_id: report.id,
-      p_action: "flag_fake",
-      p_reason: reason,
-    });
+
+    const { error } = await supabase
+      .from("waste_reports")
+      .update({
+        status: "rejected",
+        is_flagged: true,
+        flag_reason: reason,
+        flagged_by: user.id,
+        flagged_at: new Date().toISOString(),
+      })
+      .eq("id", report.id);
+
+    if (!error && report.reporter_id) {
+      await supabase.from("notifications").insert({
+        user_id: report.reporter_id,
+        title: "Report Flagged",
+        message: `Your ${report.waste_type} report was flagged as fake: ${reason}`,
+        type: "system",
+      });
+    }
 
     setReviewing(false);
     setProofTask(null);
@@ -272,12 +287,12 @@ const SupervisorAssignPage = () => {
 
     if (error) {
       toast({ title: "Flagging failed", description: "Please try again.", variant: "destructive" });
-      } else {
-      toast({ title: "Report flagged as fake" });
+    } else {
+      toast({ title: "Report flagged as fake", description: "Report rejected and no worker will be assigned." });
     }
   };
 
-  const openFlagDialog = (report: Report, task: Task) => {
+  const openFlagDialog = (report: Report, task: Task | null) => {
     setFlagReason("Duplicate report");
     setFlagDetails("");
     setFlagFor({ report, task });
@@ -419,15 +434,23 @@ const SupervisorAssignPage = () => {
                 {/* Actions */}
                 <div className="mt-3 flex gap-2">
                   {tab === "pending" && (
-                    <button
-                      onClick={() => {
-                        setAssignFor(r);
-                        setSelectedWorker(null);
-                      }}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground active:scale-[0.98]"
-                    >
-                      <Send className="h-3.5 w-3.5" /> Assign
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setAssignFor(r);
+                          setSelectedWorker(null);
+                        }}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground active:scale-[0.98]"
+                      >
+                        <Send className="h-3.5 w-3.5" /> Assign
+                      </button>
+                      <button
+                        onClick={() => openFlagDialog(r, null)}
+                        className="flex items-center justify-center gap-1.5 rounded-lg border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive active:scale-[0.98]"
+                      >
+                        <Flag className="h-3.5 w-3.5" /> Flag
+                      </button>
+                    </>
                   )}
                   {tab === "in_progress" && (
                     <button
