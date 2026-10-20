@@ -11,15 +11,13 @@ import {
   Clock,
   Shield,
   ChevronRight,
-  AlertTriangle,
+  Bell,
   Camera,
   Locate,
   Map,
   Upload,
   Headphones,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const badgeColors: Record<string, string> = {
@@ -55,6 +53,17 @@ const WorkerDashboard = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [reports, setReports] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("read", false)
+      .then(({ count }) => setUnreadCount(count ?? 0));
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -89,6 +98,7 @@ const WorkerDashboard = () => {
   const completedTodayCount = tasks.filter(
     (t) => t.status === "completed" && t.completed_at?.startsWith(todayStr)
   ).length;
+  const totalCompletedCount = tasks.filter((t) => t.status === "completed").length;
 
   const activeTasks = tasks.filter((t) => t.status !== "completed");
   const displayName = profile?.display_name ?? "Worker";
@@ -112,9 +122,15 @@ const WorkerDashboard = () => {
         </div>
         <button
           onClick={() => navigate("/notifications")}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card"
+          aria-label="Notifications"
         >
-          <AlertTriangle className="h-5 w-5 text-eco-warning" />
+          <Bell className="h-5 w-5 text-foreground" />
+          {unreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-white">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -155,8 +171,8 @@ const WorkerDashboard = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-eco-success/10 mb-1.5">
             <CheckCircle2 className="h-4.5 w-4.5 text-eco-success" />
           </div>
-          <span className="text-xl font-bold text-foreground">{completedTodayCount}</span>
-          <span className="text-[10px] text-muted-foreground text-center">Done Today</span>
+          <span className="text-xl font-bold text-foreground">{totalCompletedCount}</span>
+          <span className="text-[10px] text-muted-foreground text-center">Total Tasks Completed</span>
         </button>
       </div>
 
