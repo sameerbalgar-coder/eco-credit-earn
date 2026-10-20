@@ -18,15 +18,17 @@ const ProfilePage = () => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
+  const role = profile?.role ?? "citizen";
+  const isCitizen = role === "citizen" || role === "volunteer";
   const credits = profile?.credits_balance ?? 0;
   const co2 = profile?.co2_saved_kg ?? 0;
   const score = profile?.contribution_score ?? 0;
   const initials = (profile?.display_name ?? "U").slice(0, 2).toUpperCase();
 
   const menuItems = [
-    { icon: Coins, label: "Credit History", desc: "View all transactions", to: "/wallet" },
-    { icon: Trophy, label: "Leaderboard", desc: "See rankings", to: "/leaderboard" },
-    { icon: BookOpen, label: "Materials Guide", desc: "Recycling info", to: "/materials" },
+    ...(isCitizen ? [{ icon: Coins, label: "Credit History", desc: "View all transactions", to: "/wallet" }] : []),
+    ...(isCitizen ? [{ icon: Trophy, label: "Leaderboard", desc: "See rankings", to: "/leaderboard" }] : []),
+    ...(isCitizen ? [{ icon: BookOpen, label: "Materials Guide", desc: "Recycling info", to: "/materials" }] : []),
     { icon: Star, label: "My Reports", desc: "Report history", to: "/reports" },
     { icon: Shield, label: "Community Feed", desc: "Public reports", to: "/feed" },
     { icon: Settings, label: "Settings", desc: "Preferences and language", to: "/settings" },
@@ -52,22 +54,34 @@ const ProfilePage = () => {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
-          <Coins className="h-5 w-5 text-primary mb-1" />
-          <span className="text-lg font-bold text-foreground">{credits.toLocaleString()}</span>
-          <span className="text-[10px] text-muted-foreground">Credits</span>
-        </div>
-        <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
-          <Leaf className="h-5 w-5 text-eco-success mb-1" />
-          <span className="text-lg font-bold text-foreground">{co2}kg</span>
-          <span className="text-[10px] text-muted-foreground">CO₂ Saved</span>
-        </div>
-        <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
-          <Star className="h-5 w-5 text-eco-warning mb-1" />
-          <span className="text-lg font-bold text-foreground">{score}</span>
-          <span className="text-[10px] text-muted-foreground">Score</span>
-        </div>
+      <div className={`grid gap-3 ${isCitizen ? "grid-cols-3" : "grid-cols-1"}`}>
+        {isCitizen ? (
+          <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
+            <Coins className="h-5 w-5 text-primary mb-1" />
+            <span className="text-lg font-bold text-foreground">{credits.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground">Credits</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
+            <Star className="h-5 w-5 text-eco-warning mb-1" />
+            <span className="text-lg font-bold text-foreground">{score}</span>
+            <span className="text-[10px] text-muted-foreground">Score</span>
+          </div>
+        )}
+        {isCitizen && (
+          <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
+            <Leaf className="h-5 w-5 text-eco-success mb-1" />
+            <span className="text-lg font-bold text-foreground">{co2}kg</span>
+            <span className="text-[10px] text-muted-foreground">CO₂ Saved</span>
+          </div>
+        )}
+        {isCitizen && (
+          <div className="flex flex-col items-center rounded-xl border border-border bg-card p-3">
+            <Star className="h-5 w-5 text-eco-warning mb-1" />
+            <span className="text-lg font-bold text-foreground">{score}</span>
+            <span className="text-[10px] text-muted-foreground">Score</span>
+          </div>
+        )}
       </div>
 
       {/* Contribution Level */}

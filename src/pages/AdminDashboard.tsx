@@ -120,7 +120,7 @@ const AdminDashboard = () => {
             { icon: MessageSquare, label: "Community", desc: "Moderate feed", to: "/supervisor/community" },
             { icon: Flame, label: "Hotspots", desc: "Report density", to: "/admin/hotspots" },
             { icon: MapPin, label: "Zone Manager", desc: "Areas & staff", to: "/admin/zones" },
-            { icon: Gift, label: "Carbon Credits", desc: "Add/remove offers", to: "/admin/offers" },
+            { icon: Gift, label: "Reward Offers", desc: "Add/remove offers", to: "/admin/offers" },
           ].map(item => (
             <button
               key={item.label}
