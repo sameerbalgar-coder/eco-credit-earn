@@ -15,11 +15,6 @@ const roleLabels: Record<AppRole, string> = {
   admin: "Municipality / Admin",
 };
 
-const fetchRole = async (userId: string): Promise<AppRole | null> => {
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
-  return (data?.role as AppRole) ?? null;
-};
-
 const roles: { id: AppRole; label: string; icon: typeof User; desc: string }[] = [
   { id: "citizen", label: "Citizen / Volunteer", icon: User, desc: "Report waste & earn credits" },
   { id: "worker", label: "Worker", icon: HardHat, desc: "Complete cleanup tasks" },
@@ -72,11 +67,9 @@ const AuthPage = () => {
             : error.message;
           toast({ title: "Login failed", description: msg, variant: "destructive" });
         } else {
-          const { data: { user: u } } = await supabase.auth.getUser();
-          const role = u ? await fetchRole(u.id) : null;
           toast({
             title: "Welcome back!",
-            description: role ? `Signed in as ${roleLabels[role]}.` : "Signed in successfully.",
+            description: "Signed in successfully.",
           });
           navigate("/");
         }
@@ -90,11 +83,9 @@ const AuthPage = () => {
           // Try signing in (covers already-registered email or auto-confirm off)
           const { error: signInError } = await signIn(email, password);
           if (!signInError) {
-            const { data: { user: u } } = await supabase.auth.getUser();
-            const role = u ? await fetchRole(u.id) : null;
             toast({
               title: "Welcome back!",
-              description: role ? `Signed in as ${roleLabels[role]}.` : "Logged in successfully.",
+              description: "Logged in successfully.",
             });
             navigate("/");
           } else {
@@ -103,6 +94,8 @@ const AuthPage = () => {
           }
         }
       }
+    } catch {
+      toast({ title: "Connection unavailable", description: "Please try again.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
