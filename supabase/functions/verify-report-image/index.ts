@@ -1,6 +1,9 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+// Models whose free daily allowance ran out (UTC date), so later photos skip them instantly.
+const exhausted = new Map<string, string>();
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
