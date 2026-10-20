@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       generationConfig: { maxOutputTokens: 1024, thinkingConfig: { thinkingLevel: "low" }, responseMimeType: "application/json" },
     });
     let r: Response | null = null;
-    for (const [model, ms] of [["gemini-3.5-flash", 14000], ["gemini-flash-latest", 12000]] as const) {
+    for (const [model, ms] of [["gemini-3.5-flash", 9000], ["gemini-flash-lite-latest", 8000], ["gemini-flash-latest", 8000]] as const) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), ms);
       try {
