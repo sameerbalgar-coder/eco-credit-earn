@@ -6,9 +6,10 @@ import { ChevronLeft, ChevronRight, ThumbsUp, Clock, CheckCircle, AlertTriangle,
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: "Pending", color: "text-eco-warning", bg: "bg-eco-warning/10" },
-  assigned: { label: "Verified", color: "text-eco-info", bg: "bg-eco-info/10" },
-  in_progress: { label: "Task Assigned", color: "text-primary", bg: "bg-primary/10" },
-  completed: { label: "Resolved", color: "text-eco-success", bg: "bg-eco-success/10" },
+  assigned: { label: "Task Assigned", color: "text-eco-info", bg: "bg-eco-info/10" },
+  in_progress: { label: "In Progress", color: "text-primary", bg: "bg-primary/10" },
+  completed: { label: "Completed", color: "text-eco-success", bg: "bg-eco-success/10" },
+  verified: { label: "Resolved & Verified", color: "text-eco-success", bg: "bg-eco-success/10" },
   rejected: { label: "Rejected", color: "text-destructive", bg: "bg-destructive/10" },
 };
 
