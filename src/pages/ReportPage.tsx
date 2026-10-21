@@ -198,6 +198,7 @@ const ReportPage = () => {
   const [aiUnchecked, setAiUnchecked] = useState(false);
   const [aiFilled, setAiFilled] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<"wip" | "boosted" | null>(null);
+  const [forceNew, setForceNew] = useState(false);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -362,7 +363,7 @@ const ReportPage = () => {
     setSubmitting(true);
     try {
       // Duplicate handling: same area already reported
-      if (nearby) {
+      if (nearby && !forceNew) {
         if (nearby.status === "in_progress") {
           setDuplicateResult("wip");
           return;
@@ -425,7 +426,11 @@ const ReportPage = () => {
             ? "A cleanup team is already working at this spot. Thanks for checking!"
             : "This spot was already reported. We raised its priority level so it gets cleaned faster."}
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">No new report was created.</p>
         <Button className="mt-6 rounded-xl" onClick={() => navigate("/")}>Back to home</Button>
+        <Button variant="outline" className="mt-2 rounded-xl" onClick={() => { setForceNew(true); setDuplicateResult(null); }}>
+          It's a different issue — go back and submit as new
+        </Button>
       </div>
     );
   }
@@ -445,16 +450,19 @@ const ReportPage = () => {
   }
 
   const nearbyBanner = nearby ? (
-    nearby.status === "in_progress" ? (
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
-        🚧 <strong>Work in progress</strong> — a {nearby.waste_type} report ~{Math.round(nearby.distance_m)} m away is already being cleaned. No new report needed.
-      </div>
-    ) : (
-      <div className="rounded-xl border border-accent bg-accent/30 p-3 text-xs text-foreground">
-        📍 <strong>Already reported nearby</strong> (~{Math.round(nearby.distance_m)} m, priority level {nearby.upvote_count}). Submitting will boost its priority instead of creating a duplicate.
-      </div>
-    )
+    <div className="space-y-2 rounded-xl border border-accent bg-accent/30 p-3 text-xs text-foreground">
+      {nearby.status === "in_progress" ? (
+        <p>🚧 <strong>Work in progress</strong> — a {nearby.waste_type} report ~{Math.round(nearby.distance_m)} m away is already being cleaned.</p>
+      ) : (
+        <p>📍 <strong>Already reported nearby</strong> (~{Math.round(nearby.distance_m)} m, priority level {nearby.upvote_count}). {forceNew ? "" : "Submitting will boost its priority instead of creating a new report."}</p>
+      )}
+      <label className="flex min-h-[44px] cursor-pointer items-center gap-2 font-medium">
+        <input type="checkbox" className="h-4 w-4" checked={forceNew} onChange={(e) => setForceNew(e.target.checked)} />
+        This is a different issue — submit as a new report
+      </label>
+    </div>
   ) : null;
+
 
   const steps = [
     // Step 0: Photo
