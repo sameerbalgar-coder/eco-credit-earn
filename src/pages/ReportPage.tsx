@@ -426,7 +426,11 @@ const ReportPage = () => {
             ? "A cleanup team is already working at this spot. Thanks for checking!"
             : "This spot was already reported. We raised its priority level so it gets cleaned faster."}
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">No new report was created.</p>
         <Button className="mt-6 rounded-xl" onClick={() => navigate("/")}>Back to home</Button>
+        <Button variant="outline" className="mt-2 rounded-xl" onClick={() => { setForceNew(true); setDuplicateResult(null); }}>
+          It's a different issue — go back and submit as new
+        </Button>
       </div>
     );
   }
