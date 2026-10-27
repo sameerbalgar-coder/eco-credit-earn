@@ -41,7 +41,7 @@ const PublicFeedPage = () => {
       setUserUpvotes(new Set((upvotesRes.data ?? []).map((u: any) => u.report_id)));
       setPosts(postsRes.data ?? []);
 
-      const ids = [...new Set(data.map((r: any) => r.reporter_id))];
+      const ids = [...new Set(data.filter((r: any) => !r.is_anonymous).map((r: any) => r.reporter_id))];
       if (ids.length > 0) {
         const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", ids as string[]);
         const map: Record<string, string> = {};
