@@ -1,0 +1,1 @@
+ALTER TABLE public.waste_reports ADD COLUMN IF NOT EXISTS is_anonymous boolean NOT NULL DEFAULT false;

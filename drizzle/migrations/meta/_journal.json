@@ -43,6 +43,13 @@
       "when": 1793120985844,
       "tag": "0005_scope_report_photo_listing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793121124993,
+      "tag": "0006_report_anonymous_flag",
+      "breakpoints": true
     }
   ]
 }

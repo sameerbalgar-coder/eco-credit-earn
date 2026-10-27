@@ -41,7 +41,7 @@ const PublicFeedPage = () => {
       setUserUpvotes(new Set((upvotesRes.data ?? []).map((u: any) => u.report_id)));
       setPosts(postsRes.data ?? []);
 
-      const ids = [...new Set(data.map((r: any) => r.reporter_id))];
+      const ids = [...new Set(data.filter((r: any) => !r.is_anonymous).map((r: any) => r.reporter_id))];
       if (ids.length > 0) {
         const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", ids as string[]);
         const map: Record<string, string> = {};
@@ -289,7 +289,7 @@ const PublicFeedPage = () => {
               <div className="p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-foreground">{reporters[r.reporter_id] ?? "Citizen"}</p>
+                    <p className="text-xs font-medium text-foreground">{r.is_anonymous ? "Anonymous" : (reporters[r.reporter_id] ?? "Citizen")}</p>
                     <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(r.created_at)}</p>
                   </div>
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusColors[r.status] ?? ""}`}>

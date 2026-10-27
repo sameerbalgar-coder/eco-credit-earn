@@ -560,6 +560,7 @@ export type Database = {
           flagged_at: string | null
           flagged_by: string | null
           id: string
+          is_anonymous: boolean
           latitude: number | null
           longitude: number | null
           photo_urls: string[] | null
@@ -583,6 +584,7 @@ export type Database = {
           flagged_at?: string | null
           flagged_by?: string | null
           id?: string
+          is_anonymous?: boolean
           latitude?: number | null
           longitude?: number | null
           photo_urls?: string[] | null
@@ -606,6 +608,7 @@ export type Database = {
           flagged_at?: string | null
           flagged_by?: string | null
           id?: string
+          is_anonymous?: boolean
           latitude?: number | null
           longitude?: number | null
           photo_urls?: string[] | null
