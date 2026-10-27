@@ -29,6 +29,13 @@
       "when": 1792485886804,
       "tag": "0003_notify_supervisors_on_report_creation",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793120871589,
+      "tag": "0004_scope_upvote_reads",
+      "breakpoints": true
     }
   ]
 }
