@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Signed-in users can see upvotes" ON public.report_upvotes;
+CREATE POLICY "Users can see their own upvotes" ON public.report_upvotes FOR SELECT TO authenticated USING (auth.uid() = user_id);
