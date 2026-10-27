@@ -9,9 +9,20 @@ const PROMPT = `You compare two photos from a civic cleanup/repair task. Image 1
 Judge: (a) do they show the same location (matching background, structures, angle roughly)? (b) how much of the issue in BEFORE is resolved in AFTER (0-100)? (c) does either look AI-generated or reused?
 Reply ONLY with JSON: {"same_location": boolean, "cleanup_score": number 0-100, "suspicious": boolean, "summary": "one short sentence"}`;
 
+// Only fetch photos stored in this app's own photo bucket (blocks arbitrary links).
+function isAppPhoto(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const base = new URL(Deno.env.get("SUPABASE_URL")!);
+    return u.protocol === "https:" && u.host === base.host &&
+      u.pathname.startsWith("/storage/v1/object/public/report-photos/") && !u.pathname.includes("..");
+  } catch { return false; }
+}
+
 async function fetchImage(url: string): Promise<{ data: string; mime: string } | null> {
   try {
-    const r = await fetch(url);
+    if (!isAppPhoto(url)) return null;
+    const r = await fetch(url, { redirect: "error" });
     if (!r.ok) return null;
     const buf = new Uint8Array(await r.arrayBuffer());
     if (buf.length > 4_000_000) return null;
