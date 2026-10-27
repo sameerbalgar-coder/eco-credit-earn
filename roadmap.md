@@ -8,3 +8,4 @@
 - [ ] Repair report saving and same-category duplicate handling.
 - [ ] Restore Gemini photo checks with safe, visible fallback.
 - [ ] Verify citizen submission, supervisor visibility and reload recovery.- [ ] Anonymous checkbox on hazard reports + test anonymous on feed
+- [ ] Show all reports incl. hazard on public feed
