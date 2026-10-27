@@ -50,6 +50,7 @@ const HazardPage = () => {
   const [address, setAddress] = useState("Detecting location...");
   const [locationDenied, setLocationDenied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [reportId, setReportId] = useState<string | null>(null);
 
@@ -175,6 +176,7 @@ const HazardPage = () => {
           longitude: location.lng,
           address,
           photo_urls: photoUrl ? [photoUrl] : [],
+          is_anonymous: anonymous,
         } as any)
         .select("id")
         .single();
@@ -393,6 +395,10 @@ const HazardPage = () => {
         )}
       </div>
 
+      <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm text-foreground">
+        <input type="checkbox" className="h-4 w-4" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+        Hide my name on the public feed (post as Anonymous)
+      </label>
       <Button
         onClick={handleSubmit}
         className="w-full rounded-xl py-6 text-sm font-semibold"

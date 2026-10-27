@@ -712,6 +712,22 @@ export type Database = {
           waste_type: string
         }[]
       }
+      get_public_report_feed: {
+        Args: { p_limit?: number }
+        Returns: {
+          address: string
+          created_at: string
+          description: string
+          id: string
+          is_anonymous: boolean
+          photo_urls: string[]
+          quantity_kg: number
+          reporter_name: string
+          status: Database["public"]["Enums"]["report_status"]
+          upvote_count: number
+          waste_type: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

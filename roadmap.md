@@ -7,4 +7,5 @@
 - [ ] Reduce initial page downloads and duplicate session/profile reads.
 - [ ] Repair report saving and same-category duplicate handling.
 - [ ] Restore Gemini photo checks with safe, visible fallback.
-- [ ] Verify citizen submission, supervisor visibility and reload recovery.
+- [ ] Verify citizen submission, supervisor visibility and reload recovery.- [x] Anonymous checkbox on hazard reports + test anonymous on feed
+- [x] Show all reports incl. hazard on public feed
