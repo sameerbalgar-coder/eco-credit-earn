@@ -199,6 +199,7 @@ const ReportPage = () => {
   const [aiFilled, setAiFilled] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState<"wip" | "boosted" | null>(null);
   const [forceNew, setForceNew] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -395,6 +396,7 @@ const ReportPage = () => {
         longitude: location?.lng ?? null,
         address,
         photo_urls: photoUrls,
+        is_anonymous: anonymous,
       });
 
       if (error) throw error;
@@ -745,6 +747,11 @@ const ReportPage = () => {
             Continue <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         ) : (
+          <>
+          <label className="mb-3 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm text-foreground">
+            <input type="checkbox" className="h-4 w-4" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+            Hide my name on the public feed (post as Anonymous)
+          </label>
           <Button
             onClick={handleSubmit}
             disabled={submitting}
@@ -752,6 +759,7 @@ const ReportPage = () => {
           >
             <Upload className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Report"}
           </Button>
+          </>
         )}
       </div>
     </div>
