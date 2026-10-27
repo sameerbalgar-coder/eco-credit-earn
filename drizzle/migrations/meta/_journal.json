@@ -36,6 +36,13 @@
       "when": 1793120871589,
       "tag": "0004_scope_upvote_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793120985844,
+      "tag": "0005_scope_report_photo_listing",
+      "breakpoints": true
     }
   ]
 }
